@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minesweeper</title>
+    <link rel="stylesheet" href="minesweeper.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="../../index.html" class="back-button">← Zurück zum Hub</a>
+            <h1>💣 Minesweeper</h1>
+        </header>
+
+        <div class="game-container">
+            <div class="controls">
+                <div class="difficulty-selector">
+                    <button class="diff-btn active" data-difficulty="easy">Einfach (8x8)</button>
+                    <button class="diff-btn" data-difficulty="medium">Mittel (12x12)</button>
+                    <button class="diff-btn" data-difficulty="hard">Schwer (16x16)</button>
+                </div>
+
+                <div class="game-info">
+                    <div class="info-item">
+                        <span class="label">Minen:</span>
+                        <span id="mines-count" class="value">10</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Flaggen:</span>
+                        <span id="flags-count" class="value">0</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Zeit:</span>
+                        <span id="timer" class="value">0s</span>
+                    </div>
+                </div>
+
+                <button id="reset-btn" class="reset-btn">Neues Spiel</button>
+            </div>
+
+            <div id="game-board" class="game-board"></div>
+
+            <div id="game-message" class="game-message hidden"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>Spielanleitung:</h3>
+            <ul>
+                <li><strong>Linksklick:</strong> Feld aufdecken</li>
+                <li><strong>Rechtsklick:</strong> Flagge setzen/entfernen</li>
+                <li><strong>Ziel:</strong> Alle Felder ohne Minen aufdecken</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="minesweeper.js"></script>
+</body>
+</html>
