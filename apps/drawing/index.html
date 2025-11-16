@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zeichen-App</title>
+    <link rel="stylesheet" href="drawing.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="../../index.html" class="back-button">← Zurück zum Hub</a>
+            <h1>🎨 Zeichen-App</h1>
+        </header>
+
+        <div class="drawing-container">
+            <div class="toolbar">
+                <div class="tool-group">
+                    <label>Werkzeug:</label>
+                    <button class="tool-btn active" data-tool="pen">✏️ Stift</button>
+                    <button class="tool-btn" data-tool="eraser">🧹 Radierer</button>
+                </div>
+
+                <div class="tool-group">
+                    <label>Farbe:</label>
+                    <input type="color" id="color-picker" value="#000000">
+                    <div class="color-presets">
+                        <div class="color-preset" style="background: #000000;" data-color="#000000"></div>
+                        <div class="color-preset" style="background: #ff0000;" data-color="#ff0000"></div>
+                        <div class="color-preset" style="background: #00ff00;" data-color="#00ff00"></div>
+                        <div class="color-preset" style="background: #0000ff;" data-color="#0000ff"></div>
+                        <div class="color-preset" style="background: #ffff00;" data-color="#ffff00"></div>
+                        <div class="color-preset" style="background: #ff00ff;" data-color="#ff00ff"></div>
+                        <div class="color-preset" style="background: #00ffff;" data-color="#00ffff"></div>
+                        <div class="color-preset" style="background: #ffffff; border: 1px solid #ddd;" data-color="#ffffff"></div>
+                    </div>
+                </div>
+
+                <div class="tool-group">
+                    <label>Größe:</label>
+                    <input type="range" id="size-slider" min="1" max="50" value="5">
+                    <span id="size-value">5px</span>
+                </div>
+
+                <div class="tool-group">
+                    <button id="clear-btn" class="action-btn">🗑️ Alles löschen</button>
+                    <button id="save-btn" class="action-btn">💾 Speichern</button>
+                </div>
+            </div>
+
+            <div class="canvas-wrapper">
+                <canvas id="drawing-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="drawing.js"></script>
+</body>
+</html>

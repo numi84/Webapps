@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer</title>
+    <link rel="stylesheet" href="pomodoro.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="../../index.html" class="back-button">← Zurück zum Hub</a>
+            <h1>⏱️ Pomodoro Timer</h1>
+        </header>
+
+        <div class="timer-container">
+            <div class="mode-selector">
+                <button class="mode-btn active" data-mode="work">Arbeit</button>
+                <button class="mode-btn" data-mode="short">Kurze Pause</button>
+                <button class="mode-btn" data-mode="long">Lange Pause</button>
+            </div>
+
+            <div class="timer-display">
+                <div id="time-left" class="time">25:00</div>
+                <div id="mode-label" class="mode-label">Arbeitszeit</div>
+            </div>
+
+            <div class="progress-ring">
+                <svg width="300" height="300">
+                    <circle
+                        class="progress-ring-circle-bg"
+                        stroke="#e0e0e0"
+                        stroke-width="10"
+                        fill="transparent"
+                        r="140"
+                        cx="150"
+                        cy="150"
+                    />
+                    <circle
+                        id="progress-ring-circle"
+                        class="progress-ring-circle"
+                        stroke="#667eea"
+                        stroke-width="10"
+                        fill="transparent"
+                        r="140"
+                        cx="150"
+                        cy="150"
+                    />
+                </svg>
+            </div>
+
+            <div class="controls">
+                <button id="start-btn" class="control-btn primary">Start</button>
+                <button id="pause-btn" class="control-btn" disabled>Pause</button>
+                <button id="reset-btn" class="control-btn">Reset</button>
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-label">Pomodoros heute:</span>
+                    <span id="pomodoros-today" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Gesamt:</span>
+                    <span id="pomodoros-total" class="stat-value">0</span>
+                </div>
+            </div>
+
+            <div class="settings">
+                <h3>Einstellungen</h3>
+                <div class="setting-item">
+                    <label>Arbeitszeit (Min):</label>
+                    <input type="number" id="work-duration" value="25" min="1" max="60">
+                </div>
+                <div class="setting-item">
+                    <label>Kurze Pause (Min):</label>
+                    <input type="number" id="short-break-duration" value="5" min="1" max="30">
+                </div>
+                <div class="setting-item">
+                    <label>Lange Pause (Min):</label>
+                    <input type="number" id="long-break-duration" value="15" min="1" max="60">
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="auto-start">
+                        Automatisch nächste Session starten
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="sound-enabled" checked>
+                        Sound aktivieren
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="pomodoro.js"></script>
+</body>
+</html>
