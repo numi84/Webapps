@@ -54,40 +54,28 @@
                 </div>
 
                 <div class="game-info">
-                    <div class="series-score">
-                        <div class="series-label">Spielstand der Serie:</div>
-                        <div class="series-display">
-                            <div class="series-item">
-                                <span id="series-p1-label" class="series-player-label">Spieler 1</span>
-                                <span id="series-p1" class="series-value">0</span>
-                            </div>
-                            <div class="series-divider">-</div>
-                            <div class="series-item">
-                                <span id="series-p2" class="series-value">0</span>
-                                <span id="series-p2-label" class="series-player-label">Spieler 2</span>
-                            </div>
-                        </div>
-                    </div>
+                    <h3 class="score-title">Serienstand</h3>
                     <div class="score-display">
-                        <div class="score-item">
-                            <span id="current-game-label" class="current-game-label">Aktuelles Spiel</span>
-                        </div>
-                        <div class="score-item">
-                            <span id="score-p1-label" class="player-label">Spieler 1</span>
-                            <span id="score-p1" class="score-value">0</span>
-                        </div>
-                        <div class="score-divider">:</div>
-                        <div class="score-item">
-                            <span id="score-p2" class="score-value">0</span>
-                            <span id="score-p2-label" class="player-label">Spieler 2</span>
+                        <div class="score-text">
+                            <span class="player-name">Spieler 1</span>
+                            <span id="series-p1" class="score-value">0</span>
+                            <span class="score-separator">:</span>
+                            <span id="series-p2" class="score-value">0</span>
+                            <span class="player-name">Spieler 2</span>
                         </div>
                     </div>
+                    <!-- Hidden game score elements for JavaScript -->
+                    <span id="score-p1" style="display: none;">0</span>
+                    <span id="score-p2" style="display: none;">0</span>
                 </div>
-
-                <button id="start-btn" class="start-btn">Spiel starten</button>
             </div>
 
-            <canvas id="pong-canvas" width="800" height="600"></canvas>
+            <div class="canvas-wrapper">
+                <canvas id="pong-canvas" width="800" height="600"></canvas>
+                <button id="start-btn" class="start-btn">Spiel starten</button>
+                <div id="countdown" class="countdown hidden"></div>
+                <div id="direction-arrow" class="direction-arrow hidden"></div>
+            </div>
 
             <div id="game-message" class="game-message hidden"></div>
         </div>

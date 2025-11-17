@@ -16,6 +16,16 @@ const leftPlayerLabel = document.getElementById('left-player-label');
 const rightPlayerLabel = document.getElementById('right-player-label');
 const leftPlayerControls = document.getElementById('left-player-controls');
 const rightPlayerControls = document.getElementById('right-player-controls');
+const countdownElement = document.getElementById('countdown');
+const directionArrow = document.getElementById('direction-arrow');
+
+// Audio Context for sound effects
+let audioContext;
+try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+} catch (e) {
+    console.log('Web Audio API not supported');
+}
 
 // Game Constants
 const PADDLE_WIDTH = 10;
@@ -35,6 +45,47 @@ let seriesScore = {
     player1: 0,
     player2: 0
 };
+let ballDirection = 1; // 1 for right, -1 for left
+
+// Sound Functions
+function playSound(frequency, duration, type = 'sine') {
+    if (!audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.frequency.value = frequency;
+    oscillator.type = type;
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + duration);
+}
+
+function playCountdownSound() {
+    playSound(600, 0.1);
+}
+
+function playStartSound() {
+    playSound(800, 0.15);
+}
+
+function playPaddleHitSound() {
+    playSound(400, 0.05, 'square');
+}
+
+function playWallHitSound() {
+    playSound(300, 0.05, 'square');
+}
+
+function playScoreSound() {
+    playSound(200, 0.3, 'triangle');
+}
 
 // Game Objects
 const paddle1 = {
@@ -126,7 +177,6 @@ canvas.addEventListener('mousemove', (e) => {
 
 // Game Functions
 function startGame() {
-    gameRunning = true;
     score.player1 = 0;
     score.player2 = 0;
     seriesScore.player1 = 0;
@@ -137,8 +187,62 @@ function startGame() {
     updateSeriesScore();
     updatePlayerLabels();
     hideMessage();
-    resetBall();
-    gameLoop();
+
+    // Hide start button
+    startBtn.classList.add('hidden');
+
+    // Start countdown
+    startCountdown();
+}
+
+function startCountdown() {
+    let count = 3;
+
+    // Determine ball direction for next round
+    ballDirection = Math.random() < 0.5 ? 1 : -1;
+
+    // Show direction arrow
+    directionArrow.textContent = ballDirection === 1 ? '→' : '←';
+    directionArrow.className = 'direction-arrow ' + (ballDirection === 1 ? 'right' : 'left');
+    directionArrow.classList.remove('hidden');
+
+    const showCount = () => {
+        if (count > 0) {
+            countdownElement.textContent = count;
+            countdownElement.classList.remove('hidden');
+
+            // Remove and re-add animation
+            countdownElement.style.animation = 'none';
+            setTimeout(() => {
+                countdownElement.style.animation = 'countdownPulse 1s ease-in-out';
+            }, 10);
+
+            playCountdownSound();
+
+            // If this is "1", hide both elements after 500ms
+            if (count === 1) {
+                setTimeout(() => {
+                    countdownElement.classList.add('hidden');
+                    directionArrow.classList.add('hidden');
+                }, 500);
+            }
+
+            count--;
+            setTimeout(showCount, 1000);
+        } else {
+            // Make sure they're hidden
+            countdownElement.classList.add('hidden');
+            directionArrow.classList.add('hidden');
+
+            // Start game
+            playStartSound();
+            resetBall();
+            gameRunning = true;
+            gameLoop();
+        }
+    };
+
+    showCount();
 }
 
 function updatePlayerLabels() {
@@ -180,10 +284,9 @@ function resetBall() {
 
     // Random angle between -45 and 45 degrees, converted to radians
     const angle = (Math.random() * 90 - 45) * Math.PI / 180;
-    const direction = Math.random() < 0.5 ? 1 : -1;
 
     ball.speed = INITIAL_BALL_SPEED;
-    ball.dx = Math.cos(angle) * ball.speed * direction;
+    ball.dx = Math.cos(angle) * ball.speed * ballDirection;
     ball.dy = Math.sin(angle) * ball.speed;
 }
 
@@ -238,6 +341,7 @@ function updateBall() {
     // Wall collision (top and bottom)
     if (ball.y - ball.size / 2 <= 0 || ball.y + ball.size / 2 >= canvas.height) {
         ball.dy *= -1;
+        playWallHitSound();
     }
 
     // Paddle 1 collision
@@ -257,6 +361,7 @@ function updateBall() {
         ball.dy = Math.sin(angle) * ball.speed;
 
         ball.x = paddle1.x + paddle1.width + ball.size / 2;
+        playPaddleHitSound();
     }
 
     // Paddle 2 collision
@@ -276,6 +381,7 @@ function updateBall() {
         ball.dy = Math.sin(angle) * ball.speed;
 
         ball.x = paddle2.x - ball.size / 2;
+        playPaddleHitSound();
     }
 
     // Score detection
@@ -283,16 +389,22 @@ function updateBall() {
         // Player 2 scores
         score.player2++;
         updateScore();
+        playScoreSound();
         checkWin();
         if (gameRunning) {
+            // Generate new direction for next ball
+            ballDirection = Math.random() < 0.5 ? 1 : -1;
             setTimeout(resetBall, 1000);
         }
     } else if (ball.x + ball.size / 2 >= canvas.width) {
         // Player 1 scores
         score.player1++;
         updateScore();
+        playScoreSound();
         checkWin();
         if (gameRunning) {
+            // Generate new direction for next ball
+            ballDirection = Math.random() < 0.5 ? 1 : -1;
             setTimeout(resetBall, 1000);
         }
     }
@@ -310,6 +422,8 @@ function checkWin() {
             // Player 1 wins the series
             gameRunning = false;
             showMessage(`🎉 Spieler 1 gewinnt die Serie! (${seriesScore.player1}-${seriesScore.player2})`);
+            // Show start button again
+            startBtn.classList.remove('hidden');
         } else {
             // Continue to next game
             gameRunning = false;
@@ -317,7 +431,7 @@ function checkWin() {
             showMessage(`Spieler 1 gewinnt Spiel ${gamesPlayed}! Serie: ${seriesScore.player1}-${seriesScore.player2}`);
             setTimeout(() => {
                 startNextGame();
-            }, 2000);
+            }, 2500);
         }
     } else if (score.player2 >= WINNING_SCORE) {
         // Player 2 wins this game
@@ -330,6 +444,8 @@ function checkWin() {
             // Player 2 wins the series
             gameRunning = false;
             showMessage(`🎉 Spieler 2 gewinnt die Serie! (${seriesScore.player1}-${seriesScore.player2})`);
+            // Show start button again
+            startBtn.classList.remove('hidden');
         } else {
             // Continue to next game
             gameRunning = false;
@@ -337,7 +453,7 @@ function checkWin() {
             showMessage(`Spieler 2 gewinnt Spiel ${gamesPlayed}! Serie: ${seriesScore.player1}-${seriesScore.player2}`);
             setTimeout(() => {
                 startNextGame();
-            }, 2000);
+            }, 2500);
         }
     }
 }
@@ -347,9 +463,7 @@ function startNextGame() {
     score.player2 = 0;
     updateScore();
     hideMessage();
-    resetBall();
-    gameRunning = true;
-    gameLoop();
+    startCountdown();
 }
 
 function updateScore() {
