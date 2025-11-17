@@ -151,8 +151,7 @@ class ImageCompare {
 
         let totalPixels = width * height;
         let differentPixels = 0;
-        // Invert sensitivity: 1 = minimal (255), 100 = maximal (0)
-        const threshold = (100 - this.sensitivity) * 2.55; // Convert to 0-255 scale
+        const threshold = this.sensitivity * 2.55; // Convert to 0-255 scale
 
         for (let i = 0; i < dataA.length; i += 4) {
             const rDiff = Math.abs(dataA[i] - dataB[i]);

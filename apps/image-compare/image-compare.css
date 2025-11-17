@@ -279,33 +279,6 @@ canvas {
     width: 100%;
 }
 
-.slider-container {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-top: 10px;
-}
-
-.slider-container input[type="range"] {
-    flex: 1;
-}
-
-.slider-label {
-    font-weight: 600;
-    color: #667eea;
-    font-size: 0.9em;
-    white-space: nowrap;
-    min-width: 60px;
-}
-
-.slider-label.left {
-    text-align: right;
-}
-
-.slider-label.right {
-    text-align: left;
-}
-
 /* Statistics */
 .stats {
     margin-top: 20px;
