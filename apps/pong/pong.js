@@ -16,6 +16,7 @@ const leftPlayerLabel = document.getElementById('left-player-label');
 const rightPlayerLabel = document.getElementById('right-player-label');
 const leftPlayerControls = document.getElementById('left-player-controls');
 const rightPlayerControls = document.getElementById('right-player-controls');
+const countdownElement = document.getElementById('countdown');
 
 // Game Constants
 const PADDLE_WIDTH = 10;
@@ -126,7 +127,6 @@ canvas.addEventListener('mousemove', (e) => {
 
 // Game Functions
 function startGame() {
-    gameRunning = true;
     score.player1 = 0;
     score.player2 = 0;
     seriesScore.player1 = 0;
@@ -137,8 +137,39 @@ function startGame() {
     updateSeriesScore();
     updatePlayerLabels();
     hideMessage();
-    resetBall();
-    gameLoop();
+
+    // Hide start button
+    startBtn.classList.add('hidden');
+
+    // Start countdown
+    startCountdown();
+}
+
+function startCountdown() {
+    let count = 3;
+
+    const showCount = () => {
+        if (count > 0) {
+            countdownElement.textContent = count;
+            countdownElement.classList.remove('hidden');
+
+            // Remove and re-add animation
+            countdownElement.style.animation = 'none';
+            setTimeout(() => {
+                countdownElement.style.animation = 'countdownPulse 1s ease-in-out';
+            }, 10);
+
+            count--;
+            setTimeout(showCount, 1000);
+        } else {
+            countdownElement.classList.add('hidden');
+            resetBall();
+            gameRunning = true;
+            gameLoop();
+        }
+    };
+
+    showCount();
 }
 
 function updatePlayerLabels() {
@@ -310,6 +341,8 @@ function checkWin() {
             // Player 1 wins the series
             gameRunning = false;
             showMessage(`🎉 Spieler 1 gewinnt die Serie! (${seriesScore.player1}-${seriesScore.player2})`);
+            // Show start button again
+            startBtn.classList.remove('hidden');
         } else {
             // Continue to next game
             gameRunning = false;
@@ -317,7 +350,7 @@ function checkWin() {
             showMessage(`Spieler 1 gewinnt Spiel ${gamesPlayed}! Serie: ${seriesScore.player1}-${seriesScore.player2}`);
             setTimeout(() => {
                 startNextGame();
-            }, 2000);
+            }, 2500);
         }
     } else if (score.player2 >= WINNING_SCORE) {
         // Player 2 wins this game
@@ -330,6 +363,8 @@ function checkWin() {
             // Player 2 wins the series
             gameRunning = false;
             showMessage(`🎉 Spieler 2 gewinnt die Serie! (${seriesScore.player1}-${seriesScore.player2})`);
+            // Show start button again
+            startBtn.classList.remove('hidden');
         } else {
             // Continue to next game
             gameRunning = false;
@@ -337,7 +372,7 @@ function checkWin() {
             showMessage(`Spieler 2 gewinnt Spiel ${gamesPlayed}! Serie: ${seriesScore.player1}-${seriesScore.player2}`);
             setTimeout(() => {
                 startNextGame();
-            }, 2000);
+            }, 2500);
         }
     }
 }
@@ -347,9 +382,7 @@ function startNextGame() {
     score.player2 = 0;
     updateScore();
     hideMessage();
-    resetBall();
-    gameRunning = true;
-    gameLoop();
+    startCountdown();
 }
 
 function updateScore() {
