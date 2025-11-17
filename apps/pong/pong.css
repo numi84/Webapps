@@ -254,6 +254,10 @@ h1 {
     animation: countdownPulse 1s ease-in-out;
 }
 
+.countdown.hidden {
+    display: none;
+}
+
 @keyframes countdownPulse {
     0% {
         transform: translate(-50%, -50%) scale(0.5);
@@ -280,6 +284,10 @@ h1 {
     text-shadow: 0 0 30px rgba(102, 126, 234, 0.8), 0 0 60px rgba(118, 75, 162, 0.6);
     z-index: 14;
     animation: arrowPulse 0.8s ease-in-out infinite;
+}
+
+.direction-arrow.hidden {
+    display: none;
 }
 
 .direction-arrow.left {
