@@ -158,47 +158,6 @@ h1 {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.series-display {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 2px solid rgba(255, 255, 255, 0.2);
-}
-
-.series-label {
-    color: rgba(255, 255, 255, 0.9);
-    font-weight: 600;
-    font-size: 1em;
-}
-
-.series-text {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.series-name {
-    color: rgba(255, 255, 255, 0.9);
-    font-weight: 500;
-    font-size: 0.95em;
-}
-
-.series-score {
-    color: white;
-    font-size: 1.4em;
-    font-weight: bold;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.series-separator {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 1.2em;
-    font-weight: bold;
-}
-
 .score-display {
     display: flex;
     justify-content: center;
@@ -443,15 +402,6 @@ h1 {
 
     .score-title {
         font-size: 1.1em;
-    }
-
-    .series-display {
-        flex-direction: column;
-        gap: 5px;
-    }
-
-    .series-score {
-        font-size: 1.2em;
     }
 
     .countdown {

@@ -219,22 +219,20 @@ function startCountdown() {
 
             playCountdownSound();
 
-            // Hide countdown and arrow before 1 finishes
-            if (count === 1) {
-                setTimeout(() => {
-                    countdownElement.classList.add('hidden');
-                    directionArrow.classList.add('hidden');
-                }, 500); // Hide after 0.5 seconds
-            }
-
             count--;
             setTimeout(showCount, 1000);
         } else {
-            // Start game
-            playStartSound();
-            resetBall();
-            gameRunning = true;
-            gameLoop();
+            // Hide countdown and arrow completely before starting
+            countdownElement.classList.add('hidden');
+            directionArrow.classList.add('hidden');
+
+            // Wait a moment then start game
+            setTimeout(() => {
+                playStartSound();
+                resetBall();
+                gameRunning = true;
+                gameLoop();
+            }, 100);
         }
     };
 
