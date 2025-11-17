@@ -227,14 +227,10 @@ main {
     display: block;
 }
 
-#sideBySideView {
+#sideBySideView.active {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
-}
-
-#sideBySideView.active {
-    display: grid;
 }
 
 .image-wrapper {
