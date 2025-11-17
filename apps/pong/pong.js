@@ -6,8 +6,16 @@ const ctx = canvas.getContext('2d');
 const startBtn = document.getElementById('start-btn');
 const scoreP1Element = document.getElementById('score-p1');
 const scoreP2Element = document.getElementById('score-p2');
+const seriesP1Element = document.getElementById('series-p1');
+const seriesP2Element = document.getElementById('series-p2');
 const gameMessage = document.getElementById('game-message');
 const controlModeSelect = document.getElementById('control-mode');
+const bestOfSelect = document.getElementById('best-of');
+const sideSelectionSelect = document.getElementById('side-selection');
+const leftPlayerLabel = document.getElementById('left-player-label');
+const rightPlayerLabel = document.getElementById('right-player-label');
+const leftPlayerControls = document.getElementById('left-player-controls');
+const rightPlayerControls = document.getElementById('right-player-controls');
 
 // Game Constants
 const PADDLE_WIDTH = 10;
@@ -21,6 +29,12 @@ const WINNING_SCORE = 10;
 let gameRunning = false;
 let controlMode = 'arrows'; // 'arrows' or 'mouse'
 let mouseY = canvas.height / 2;
+let bestOf = 10; // Number of games in the series
+let player1Side = 'left'; // 'left' or 'right'
+let seriesScore = {
+    player1: 0,
+    player2: 0
+};
 
 // Game Objects
 const paddle1 = {
@@ -68,6 +82,15 @@ controlModeSelect.addEventListener('change', (e) => {
     controlMode = e.target.value;
 });
 
+bestOfSelect.addEventListener('change', (e) => {
+    bestOf = parseInt(e.target.value);
+});
+
+sideSelectionSelect.addEventListener('change', (e) => {
+    player1Side = e.target.value;
+    updatePlayerLabels();
+});
+
 // Keyboard Events
 document.addEventListener('keydown', (e) => {
     if (e.key === 'w' || e.key === 'W') {
@@ -106,10 +129,49 @@ function startGame() {
     gameRunning = true;
     score.player1 = 0;
     score.player2 = 0;
+    seriesScore.player1 = 0;
+    seriesScore.player2 = 0;
+    bestOf = parseInt(bestOfSelect.value);
+    player1Side = sideSelectionSelect.value;
     updateScore();
+    updateSeriesScore();
+    updatePlayerLabels();
     hideMessage();
     resetBall();
     gameLoop();
+}
+
+function updatePlayerLabels() {
+    if (player1Side === 'left') {
+        leftPlayerLabel.textContent = 'Spieler 1 (Links)';
+        rightPlayerLabel.textContent = 'Spieler 2 (Rechts)';
+        leftPlayerControls.textContent = 'W - Hoch | S - Runter';
+        rightPlayerControls.innerHTML = `
+            <select id="control-mode" class="control-select">
+                <option value="arrows" ${controlMode === 'arrows' ? 'selected' : ''}>Pfeiltasten (↑/↓)</option>
+                <option value="mouse" ${controlMode === 'mouse' ? 'selected' : ''}>Maus</option>
+            </select>
+        `;
+    } else {
+        leftPlayerLabel.textContent = 'Spieler 2 (Links)';
+        rightPlayerLabel.textContent = 'Spieler 1 (Rechts)';
+        rightPlayerControls.textContent = 'W - Hoch | S - Runter';
+        leftPlayerControls.innerHTML = `
+            <select id="control-mode" class="control-select">
+                <option value="arrows" ${controlMode === 'arrows' ? 'selected' : ''}>Pfeiltasten (↑/↓)</option>
+                <option value="mouse" ${controlMode === 'mouse' ? 'selected' : ''}>Maus</option>
+            </select>
+        `;
+    }
+
+    // Re-attach event listener to the new control mode select
+    const newControlModeSelect = document.getElementById('control-mode');
+    if (newControlModeSelect) {
+        newControlModeSelect.addEventListener('change', (e) => {
+            controlMode = e.target.value;
+        });
+        controlMode = newControlModeSelect.value;
+    }
 }
 
 function resetBall() {
@@ -126,33 +188,37 @@ function resetBall() {
 }
 
 function updatePaddles() {
-    // Player 1 (WASD)
+    // Determine which paddle each player controls based on side selection
+    const player1Paddle = player1Side === 'left' ? paddle1 : paddle2;
+    const player2Paddle = player1Side === 'left' ? paddle2 : paddle1;
+
+    // Player 1 (WASD) controls their assigned paddle
     if (keys.w) {
-        paddle1.dy = -PADDLE_SPEED;
+        player1Paddle.dy = -PADDLE_SPEED;
     } else if (keys.s) {
-        paddle1.dy = PADDLE_SPEED;
+        player1Paddle.dy = PADDLE_SPEED;
     } else {
-        paddle1.dy = 0;
+        player1Paddle.dy = 0;
     }
 
-    // Player 2 (Arrows or Mouse)
+    // Player 2 (Arrows or Mouse) controls their assigned paddle
     if (controlMode === 'arrows') {
         if (keys.ArrowUp) {
-            paddle2.dy = -PADDLE_SPEED;
+            player2Paddle.dy = -PADDLE_SPEED;
         } else if (keys.ArrowDown) {
-            paddle2.dy = PADDLE_SPEED;
+            player2Paddle.dy = PADDLE_SPEED;
         } else {
-            paddle2.dy = 0;
+            player2Paddle.dy = 0;
         }
     } else if (controlMode === 'mouse') {
         // Smooth mouse following
-        const targetY = mouseY - paddle2.height / 2;
-        const diff = targetY - paddle2.y;
+        const targetY = mouseY - player2Paddle.height / 2;
+        const diff = targetY - player2Paddle.y;
 
         if (Math.abs(diff) > 2) {
-            paddle2.dy = diff * 0.15;
+            player2Paddle.dy = diff * 0.15;
         } else {
-            paddle2.dy = 0;
+            player2Paddle.dy = 0;
         }
     }
 
@@ -234,17 +300,66 @@ function updateBall() {
 
 function checkWin() {
     if (score.player1 >= WINNING_SCORE) {
-        gameRunning = false;
-        showMessage('🎉 Spieler 1 gewinnt!');
+        // Player 1 wins this game
+        seriesScore.player1++;
+        updateSeriesScore();
+
+        const gamesNeededToWin = Math.ceil(bestOf / 2);
+
+        if (seriesScore.player1 >= gamesNeededToWin) {
+            // Player 1 wins the series
+            gameRunning = false;
+            showMessage(`🎉 Spieler 1 gewinnt die Serie! (${seriesScore.player1}-${seriesScore.player2})`);
+        } else {
+            // Continue to next game
+            gameRunning = false;
+            const gamesPlayed = seriesScore.player1 + seriesScore.player2;
+            showMessage(`Spieler 1 gewinnt Spiel ${gamesPlayed}! Serie: ${seriesScore.player1}-${seriesScore.player2}`);
+            setTimeout(() => {
+                startNextGame();
+            }, 2000);
+        }
     } else if (score.player2 >= WINNING_SCORE) {
-        gameRunning = false;
-        showMessage('🎉 Spieler 2 gewinnt!');
+        // Player 2 wins this game
+        seriesScore.player2++;
+        updateSeriesScore();
+
+        const gamesNeededToWin = Math.ceil(bestOf / 2);
+
+        if (seriesScore.player2 >= gamesNeededToWin) {
+            // Player 2 wins the series
+            gameRunning = false;
+            showMessage(`🎉 Spieler 2 gewinnt die Serie! (${seriesScore.player1}-${seriesScore.player2})`);
+        } else {
+            // Continue to next game
+            gameRunning = false;
+            const gamesPlayed = seriesScore.player1 + seriesScore.player2;
+            showMessage(`Spieler 2 gewinnt Spiel ${gamesPlayed}! Serie: ${seriesScore.player1}-${seriesScore.player2}`);
+            setTimeout(() => {
+                startNextGame();
+            }, 2000);
+        }
     }
+}
+
+function startNextGame() {
+    score.player1 = 0;
+    score.player2 = 0;
+    updateScore();
+    hideMessage();
+    resetBall();
+    gameRunning = true;
+    gameLoop();
 }
 
 function updateScore() {
     scoreP1Element.textContent = score.player1;
     scoreP2Element.textContent = score.player2;
+}
+
+function updateSeriesScore() {
+    seriesP1Element.textContent = seriesScore.player1;
+    seriesP2Element.textContent = seriesScore.player2;
 }
 
 function showMessage(msg) {
