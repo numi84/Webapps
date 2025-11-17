@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schiebepuzzle</title>
+    <link rel="stylesheet" href="puzzle.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="../../index.html" class="back-button">← Zurück zum Hub</a>
+            <h1>🧩 Schiebepuzzle</h1>
+        </header>
+
+        <div class="game-container">
+            <div class="controls">
+                <div class="difficulty-selector">
+                    <button class="diff-btn active" data-size="3">3x3</button>
+                    <button class="diff-btn" data-size="4">4x4</button>
+                    <button class="diff-btn" data-size="5">5x5</button>
+                </div>
+
+                <div class="game-info">
+                    <div class="info-item">
+                        <span class="label">Züge:</span>
+                        <span id="moves" class="value">0</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Zeit:</span>
+                        <span id="timer" class="value">0s</span>
+                    </div>
+                </div>
+
+                <button id="shuffle-btn" class="shuffle-btn">Neu mischen</button>
+            </div>
+
+            <div id="puzzle-board" class="puzzle-board"></div>
+
+            <div id="win-message" class="win-message hidden">
+                🎉 Gewonnen!
+            </div>
+        </div>
+    </div>
+
+    <script src="puzzle.js"></script>
+</body>
+</html>

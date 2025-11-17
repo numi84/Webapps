@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory</title>
+    <link rel="stylesheet" href="memory.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="../../index.html" class="back-button">← Zurück zum Hub</a>
+            <h1>🃏 Memory</h1>
+        </header>
+
+        <div class="game-container">
+            <div class="controls">
+                <div class="difficulty-selector">
+                    <button class="diff-btn active" data-pairs="6">Einfach (12)</button>
+                    <button class="diff-btn" data-pairs="8">Mittel (16)</button>
+                    <button class="diff-btn" data-pairs="12">Schwer (24)</button>
+                </div>
+
+                <div class="game-info">
+                    <div class="info-item">
+                        <span class="label">Züge:</span>
+                        <span id="moves" class="value">0</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Paare gefunden:</span>
+                        <span id="pairs" class="value">0</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Zeit:</span>
+                        <span id="timer" class="value">0s</span>
+                    </div>
+                </div>
+
+                <button id="new-game-btn" class="new-game-btn">Neues Spiel</button>
+            </div>
+
+            <div id="game-board" class="game-board"></div>
+
+            <div id="win-message" class="win-message hidden">
+                🎉 Alle Paare gefunden!
+            </div>
+        </div>
+    </div>
+
+    <script src="memory.js"></script>
+</body>
+</html>

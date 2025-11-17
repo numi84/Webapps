@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yatzy</title>
+    <link rel="stylesheet" href="yatzy.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="../../index.html" class="back-button">← Zurück zum Hub</a>
+            <h1>🎲 Yatzy</h1>
+        </header>
+
+        <div class="game-container">
+            <div class="info-bar">
+                <div class="info-item">
+                    <span class="label">Würfe übrig:</span>
+                    <span id="rolls-left" class="value">3</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Gesamtpunktzahl:</span>
+                    <span id="total-score" class="value">0</span>
+                </div>
+            </div>
+
+            <div class="dice-container">
+                <div class="dice" data-index="0">
+                    <div class="dice-value">?</div>
+                    <button class="hold-btn">Halten</button>
+                </div>
+                <div class="dice" data-index="1">
+                    <div class="dice-value">?</div>
+                    <button class="hold-btn">Halten</button>
+                </div>
+                <div class="dice" data-index="2">
+                    <div class="dice-value">?</div>
+                    <button class="hold-btn">Halten</button>
+                </div>
+                <div class="dice" data-index="3">
+                    <div class="dice-value">?</div>
+                    <button class="hold-btn">Halten</button>
+                </div>
+                <div class="dice" data-index="4">
+                    <div class="dice-value">?</div>
+                    <button class="hold-btn">Halten</button>
+                </div>
+            </div>
+
+            <button id="roll-btn" class="roll-btn">Würfeln!</button>
+
+            <div class="scorecard">
+                <h3>Punktekarte</h3>
+                <div class="scorecard-section">
+                    <h4>Oberer Bereich</h4>
+                    <div class="score-row" data-category="ones">
+                        <span class="category-name">Einser</span>
+                        <span class="category-score">-</span>
+                        <button class="select-btn">Wählen</button>
+                    </div>
+                    <div class="score-row" data-category="twos">
+                        <span class="category-name">Zweier</span>
+                        <span class="category-score">-</span>
+                        <button class="select-btn">Wählen</button>
+                    </div>
+                    <div class="score-row" data-category="threes">
+                        <span class="category-name">Dreier</span>
+                        <span class="category-score">-</span>
+                        <button class="select-btn">Wählen</button>
+                    </div>
+                    <div class="score-row" data-category="fours">
+                        <span class="category-name">Vierer</span>
+                        <span class="category-score">-</span>
+                        <button class="select-btn">Wählen</button>
+                    </div>
+                    <div class="score-row" data-category="fives">
+                        <span class="category-name">Fünfer</span>
+                        <span class="category-score">-</span>
+                        <button class="select-btn">Wählen</button>
+                    </div>
+                    <div class="score-row" data-category="sixes">
+                        <span class="category-name">Sechser</span>
+                        <span class="category-score">-</span>
+                        <button class="select-btn">Wählen</button>
+                    </div>
+                    <div class="score-row total">
+                        <span class="category-name"><strong>Bonus (bei ≥63)</strong></span>
+                        <span id="bonus-score" class="category-score"><strong>0</strong></span>
+                    </div>
+                </div>
+
+                <div class="scorecard-section">
+                    <h4>Unterer Bereich</h4>
+                    <div class="score-row" data-category="threeOfKind">
+                        <span class="category-name">Dreierpasch</span>
+                        <span class="category-score">-</span>
+                        <button class="select-btn">Wählen</button>
+                    </div>
+                    <div class="score-row" data-category="fourOfKind">
+                        <span class="category-name">Viererpasch</span>
+                        <span class="category-score">-</span>
+                        <button class="select-btn">Wählen</button>
+                    </div>
+                    <div class="score-row" data-category="fullHouse">
+                        <span class="category-name">Full House</span>
+                        <span class="category-score">-</span>
+                        <button class="select-btn">Wählen</button>
+                    </div>
+                    <div class="score-row" data-category="smallStraight">
+                        <span class="category-name">Kleine Straße</span>
+                        <span class="category-score">-</span>
+                        <button class="select-btn">Wählen</button>
+                    </div>
+                    <div class="score-row" data-category="largeStraight">
+                        <span class="category-name">Große Straße</span>
+                        <span class="category-score">-</span>
+                        <button class="select-btn">Wählen</button>
+                    </div>
+                    <div class="score-row" data-category="yatzy">
+                        <span class="category-name">Yatzy</span>
+                        <span class="category-score">-</span>
+                        <button class="select-btn">Wählen</button>
+                    </div>
+                    <div class="score-row" data-category="chance">
+                        <span class="category-name">Chance</span>
+                        <span class="category-score">-</span>
+                        <button class="select-btn">Wählen</button>
+                    </div>
+                </div>
+            </div>
+
+            <button id="new-game-btn" class="new-game-btn">Neues Spiel</button>
+        </div>
+    </div>
+
+    <script src="yatzy.js"></script>
+</body>
+</html>
