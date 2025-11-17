@@ -54,7 +54,7 @@
                 </div>
 
                 <div class="game-info">
-                    <h3 class="score-title">Aktuelles Spiel <span id="series-info" class="series-info">(Serie: <span id="series-p1">0</span> - <span id="series-p2">0</span>)</span></h3>
+                    <h3 class="score-title">Aktuelles Spiel</h3>
                     <div class="score-display">
                         <div class="score-text">
                             <span class="player-name">Spieler 1</span>
@@ -64,6 +64,16 @@
                             <span class="player-name">Spieler 2</span>
                         </div>
                     </div>
+                    <div class="series-display">
+                        <span class="series-label">Serie:</span>
+                        <span class="series-text">
+                            <span class="series-name">Spieler 1</span>
+                            <span id="series-p1" class="series-score">0</span>
+                            <span class="series-separator">-</span>
+                            <span id="series-p2" class="series-score">0</span>
+                            <span class="series-name">Spieler 2</span>
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -71,6 +81,7 @@
                 <canvas id="pong-canvas" width="800" height="600"></canvas>
                 <button id="start-btn" class="start-btn">Spiel starten</button>
                 <div id="countdown" class="countdown hidden"></div>
+                <div id="direction-arrow" class="direction-arrow hidden"></div>
             </div>
 
             <div id="game-message" class="game-message hidden"></div>

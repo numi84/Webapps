@@ -17,6 +17,15 @@ const rightPlayerLabel = document.getElementById('right-player-label');
 const leftPlayerControls = document.getElementById('left-player-controls');
 const rightPlayerControls = document.getElementById('right-player-controls');
 const countdownElement = document.getElementById('countdown');
+const directionArrow = document.getElementById('direction-arrow');
+
+// Audio Context for sound effects
+let audioContext;
+try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+} catch (e) {
+    console.log('Web Audio API not supported');
+}
 
 // Game Constants
 const PADDLE_WIDTH = 10;
@@ -36,6 +45,47 @@ let seriesScore = {
     player1: 0,
     player2: 0
 };
+let ballDirection = 1; // 1 for right, -1 for left
+
+// Sound Functions
+function playSound(frequency, duration, type = 'sine') {
+    if (!audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.frequency.value = frequency;
+    oscillator.type = type;
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + duration);
+}
+
+function playCountdownSound() {
+    playSound(600, 0.1);
+}
+
+function playStartSound() {
+    playSound(800, 0.15);
+}
+
+function playPaddleHitSound() {
+    playSound(400, 0.05, 'square');
+}
+
+function playWallHitSound() {
+    playSound(300, 0.05, 'square');
+}
+
+function playScoreSound() {
+    playSound(200, 0.3, 'triangle');
+}
 
 // Game Objects
 const paddle1 = {
@@ -148,6 +198,14 @@ function startGame() {
 function startCountdown() {
     let count = 3;
 
+    // Determine ball direction for next round
+    ballDirection = Math.random() < 0.5 ? 1 : -1;
+
+    // Show direction arrow
+    directionArrow.textContent = ballDirection === 1 ? '→' : '←';
+    directionArrow.className = 'direction-arrow ' + (ballDirection === 1 ? 'right' : 'left');
+    directionArrow.classList.remove('hidden');
+
     const showCount = () => {
         if (count > 0) {
             countdownElement.textContent = count;
@@ -159,10 +217,21 @@ function startCountdown() {
                 countdownElement.style.animation = 'countdownPulse 1s ease-in-out';
             }, 10);
 
+            playCountdownSound();
+
+            // Hide countdown and arrow before 1 finishes
+            if (count === 1) {
+                setTimeout(() => {
+                    countdownElement.classList.add('hidden');
+                    directionArrow.classList.add('hidden');
+                }, 500); // Hide after 0.5 seconds
+            }
+
             count--;
             setTimeout(showCount, 1000);
         } else {
-            countdownElement.classList.add('hidden');
+            // Start game
+            playStartSound();
             resetBall();
             gameRunning = true;
             gameLoop();
@@ -211,10 +280,9 @@ function resetBall() {
 
     // Random angle between -45 and 45 degrees, converted to radians
     const angle = (Math.random() * 90 - 45) * Math.PI / 180;
-    const direction = Math.random() < 0.5 ? 1 : -1;
 
     ball.speed = INITIAL_BALL_SPEED;
-    ball.dx = Math.cos(angle) * ball.speed * direction;
+    ball.dx = Math.cos(angle) * ball.speed * ballDirection;
     ball.dy = Math.sin(angle) * ball.speed;
 }
 
@@ -269,6 +337,7 @@ function updateBall() {
     // Wall collision (top and bottom)
     if (ball.y - ball.size / 2 <= 0 || ball.y + ball.size / 2 >= canvas.height) {
         ball.dy *= -1;
+        playWallHitSound();
     }
 
     // Paddle 1 collision
@@ -288,6 +357,7 @@ function updateBall() {
         ball.dy = Math.sin(angle) * ball.speed;
 
         ball.x = paddle1.x + paddle1.width + ball.size / 2;
+        playPaddleHitSound();
     }
 
     // Paddle 2 collision
@@ -307,6 +377,7 @@ function updateBall() {
         ball.dy = Math.sin(angle) * ball.speed;
 
         ball.x = paddle2.x - ball.size / 2;
+        playPaddleHitSound();
     }
 
     // Score detection
@@ -314,16 +385,22 @@ function updateBall() {
         // Player 2 scores
         score.player2++;
         updateScore();
+        playScoreSound();
         checkWin();
         if (gameRunning) {
+            // Generate new direction for next ball
+            ballDirection = Math.random() < 0.5 ? 1 : -1;
             setTimeout(resetBall, 1000);
         }
     } else if (ball.x + ball.size / 2 >= canvas.width) {
         // Player 1 scores
         score.player1++;
         updateScore();
+        playScoreSound();
         checkWin();
         if (gameRunning) {
+            // Generate new direction for next ball
+            ballDirection = Math.random() < 0.5 ? 1 : -1;
             setTimeout(resetBall, 1000);
         }
     }

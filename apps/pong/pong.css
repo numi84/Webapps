@@ -158,10 +158,45 @@ h1 {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.series-info {
-    font-size: 0.7em;
-    opacity: 0.9;
-    font-weight: normal;
+.series-display {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.series-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+    font-size: 1em;
+}
+
+.series-text {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.series-name {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+    font-size: 0.95em;
+}
+
+.series-score {
+    color: white;
+    font-size: 1.4em;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.series-separator {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.2em;
+    font-weight: bold;
 }
 
 .score-display {
@@ -275,6 +310,49 @@ h1 {
     }
 }
 
+.direction-arrow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 6em;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 0 30px rgba(102, 126, 234, 0.8), 0 0 60px rgba(118, 75, 162, 0.6);
+    z-index: 14;
+    animation: arrowPulse 0.8s ease-in-out infinite;
+}
+
+.direction-arrow.left {
+    animation: arrowSlideLeft 0.8s ease-in-out infinite;
+}
+
+.direction-arrow.right {
+    animation: arrowSlideRight 0.8s ease-in-out infinite;
+}
+
+@keyframes arrowSlideLeft {
+    0%, 100% {
+        transform: translate(-50%, -50%) translateX(0);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -50%) translateX(-30px);
+        opacity: 0.7;
+    }
+}
+
+@keyframes arrowSlideRight {
+    0%, 100% {
+        transform: translate(-50%, -50%) translateX(0);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -50%) translateX(30px);
+        opacity: 0.7;
+    }
+}
+
 .game-message {
     margin-top: 20px;
     padding: 20px;
@@ -367,8 +445,21 @@ h1 {
         font-size: 1.1em;
     }
 
+    .series-display {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .series-score {
+        font-size: 1.2em;
+    }
+
     .countdown {
         font-size: 5em;
+    }
+
+    .direction-arrow {
+        font-size: 4em;
     }
 
     .start-btn {
