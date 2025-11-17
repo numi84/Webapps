@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong</title>
+    <link rel="stylesheet" href="pong.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="../../index.html" class="back-button">← Zurück zum Hub</a>
+            <h1>🏓 Pong</h1>
+        </header>
+
+        <div class="game-container">
+            <div class="controls">
+                <div class="player-controls">
+                    <div class="control-info">
+                        <h3>Spieler 1 (Links)</h3>
+                        <p>W - Hoch | S - Runter</p>
+                    </div>
+                    <div class="control-info">
+                        <h3>Spieler 2 (Rechts)</h3>
+                        <select id="control-mode" class="control-select">
+                            <option value="arrows">Pfeiltasten (↑/↓)</option>
+                            <option value="mouse">Maus</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="game-info">
+                    <div class="score-display">
+                        <div class="score-item">
+                            <span class="player-label">Spieler 1</span>
+                            <span id="score-p1" class="score-value">0</span>
+                        </div>
+                        <div class="score-divider">:</div>
+                        <div class="score-item">
+                            <span id="score-p2" class="score-value">0</span>
+                            <span class="player-label">Spieler 2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="start-btn" class="start-btn">Spiel starten</button>
+            </div>
+
+            <canvas id="pong-canvas" width="800" height="600"></canvas>
+
+            <div id="game-message" class="game-message hidden"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>Spielanleitung:</h3>
+            <ul>
+                <li><strong>Spieler 1:</strong> W (hoch) und S (runter)</li>
+                <li><strong>Spieler 2:</strong> Pfeiltasten (↑/↓) oder Maus</li>
+                <li><strong>Ziel:</strong> Den Ball am Gegner vorbei schlagen</li>
+                <li><strong>Punkte:</strong> Erster Spieler mit 10 Punkten gewinnt</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="pong.js"></script>
+</body>
+</html>
