@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bildvergleich - A/B Vergleich</title>
+    <link rel="stylesheet" href="image-compare.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 Bildvergleich</h1>
+            <p>Lade zwei Bilder hoch und finde die Unterschiede</p>
+            <a href="../../index.html" class="back-button">← Zurück zum Hub</a>
+        </header>
+
+        <main>
+            <div class="upload-section">
+                <div class="upload-box">
+                    <h3>Bild A</h3>
+                    <input type="file" id="imageA" accept="image/*">
+                    <label for="imageA" class="upload-label">
+                        <span class="upload-icon">📁</span>
+                        <span>Bild A hochladen</span>
+                    </label>
+                </div>
+                <div class="upload-box">
+                    <h3>Bild B</h3>
+                    <input type="file" id="imageB" accept="image/*">
+                    <label for="imageB" class="upload-label">
+                        <span class="upload-icon">📁</span>
+                        <span>Bild B hochladen</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label for="sensitivity">Empfindlichkeit: <span id="sensitivityValue">30</span></label>
+                    <input type="range" id="sensitivity" min="1" max="100" value="30">
+                </div>
+                <button id="compareBtn" class="btn-primary" disabled>Bilder vergleichen</button>
+                <button id="resetBtn" class="btn-secondary">Zurücksetzen</button>
+            </div>
+
+            <div class="results-section" id="resultsSection">
+                <div class="view-tabs">
+                    <button class="tab-btn active" data-view="side-by-side">Nebeneinander</button>
+                    <button class="tab-btn" data-view="overlay">Überlagert</button>
+                    <button class="tab-btn" data-view="difference">Nur Unterschiede</button>
+                </div>
+
+                <div class="comparison-container" id="comparisonContainer">
+                    <!-- Side by Side View -->
+                    <div class="view-content active" id="sideBySideView">
+                        <div class="image-wrapper">
+                            <h4>Bild A</h4>
+                            <canvas id="canvasA"></canvas>
+                        </div>
+                        <div class="image-wrapper">
+                            <h4>Bild B</h4>
+                            <canvas id="canvasB"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Overlay View -->
+                    <div class="view-content" id="overlayView">
+                        <div class="image-wrapper single">
+                            <canvas id="canvasOverlay"></canvas>
+                            <div class="overlay-controls">
+                                <label>Transparenz: <span id="opacityValue">50</span>%</label>
+                                <input type="range" id="opacity" min="0" max="100" value="50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Difference View -->
+                    <div class="view-content" id="differenceView">
+                        <div class="image-wrapper single">
+                            <h4>Erkannte Unterschiede</h4>
+                            <canvas id="canvasDiff"></canvas>
+                            <div class="stats" id="diffStats"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="image-compare.js"></script>
+</body>
+</html>
