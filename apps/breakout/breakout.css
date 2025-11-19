@@ -403,13 +403,14 @@ body {
 /* Active Powerups */
 .active-powerups {
     position: absolute;
-    top: 120px;
+    top: 140px;
     right: 20px;
     display: flex;
     flex-direction: column;
     gap: 10px;
     z-index: 50;
     pointer-events: none;
+    max-width: 200px;
 }
 
 .powerup-indicator {
@@ -471,6 +472,8 @@ body {
     background: rgba(0, 0, 0, 0.5);
     max-width: 100%;
     max-height: calc(100vh - 100px);
+    position: relative;
+    z-index: 1;
 }
 
 /* Game Overlay */
