@@ -1301,14 +1301,34 @@ class PuzzleGame {
 // ==========================================
 
 function getDifficulty() {
+    let rows, cols, name;
+
     if (gameState.useCustom) {
-        return {
-            rows: gameState.customRows,
-            cols: gameState.customCols,
-            name: 'Custom'
-        };
+        rows = gameState.customRows;
+        cols = gameState.customCols;
+        name = 'Custom';
+    } else {
+        const difficulty = DIFFICULTIES[gameState.difficulty];
+        rows = difficulty.rows;
+        cols = difficulty.cols;
+        name = difficulty.name;
     }
-    return DIFFICULTIES[gameState.difficulty];
+
+    // Adjust grid based on image orientation
+    if (gameState.image) {
+        const isPortrait = gameState.image.height > gameState.image.width;
+
+        // If portrait orientation, swap rows and cols to prevent stretched pieces
+        if (isPortrait && rows < cols) {
+            [rows, cols] = [cols, rows];
+        }
+        // If landscape orientation, ensure cols >= rows
+        else if (!isPortrait && rows > cols) {
+            [rows, cols] = [cols, rows];
+        }
+    }
+
+    return { rows, cols, name };
 }
 
 // ==========================================

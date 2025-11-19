@@ -131,8 +131,28 @@ Die Invertierung in `generateShapes()` stellt sicher, dass benachbarte Teile kom
 
 ---
 
+## Issue 12: Puzzle-Grid berücksichtigt Bildformat nicht
+**Problem:** Die Puzzle-Teile werden bei Hochformat-Bildern gestaucht, da immer die gleichen Grid-Dimensionen verwendet werden (z.B. 3×4 für Querformat).
+
+**Erwartetes Verhalten:** Bei Hochformat-Bildern sollten die Grid-Dimensionen vertauscht werden (z.B. 4×3 statt 3×4), um quadratischere Puzzle-Teile zu erhalten.
+
+**Status:** ✅ Behoben
+
+**Lösung:**
+- `getDifficulty()` Funktion wurde erweitert, um das Bildformat zu berücksichtigen
+- Bei Hochformat (Höhe > Breite): Zeilen und Spalten werden vertauscht
+- Bei Querformat (Breite > Höhe): Original-Dimensionen bleiben
+- Beispiele:
+  - Querformat → Einfach: 3×4, Mittel: 4×6, Schwer: 6×8, Experte: 8×12
+  - Hochformat → Einfach: 4×3, Mittel: 6×4, Schwer: 8×6, Experte: 12×8
+
+Dies verhindert stark gestreckte oder gestauchte Puzzle-Teile.
+
+---
+
 ## Notizen
-- ✅ Alle 11 Issues wurden am 2025-11-19 behoben
+- ✅ Alle 12 Issues wurden am 2025-11-19 behoben
 - Die Puzzle-App ist nun vollständig funktionsfähig
 - Issue 10 war der kritischste Bug, der die gesamte Puzzle-Mechanik betraf
 - Issue 11 verbessert die visuelle Qualität erheblich
+- Issue 12 sorgt für bessere Proportionen der Puzzle-Teile
