@@ -80,23 +80,37 @@ class PuzzlePiece {
         ctx.save();
         ctx.translate(this.x, this.y);
 
-        // Create clip path
+        // Create clip path if shape exists
         if (this.shape) {
             this.shape.createPath(ctx, this.width, this.height);
             ctx.clip();
+        } else {
+            // Fallback to rectangle
+            ctx.rect(0, 0, this.width, this.height);
+            ctx.clip();
         }
 
-        // Draw image
-        ctx.drawImage(this.imageData, 0, 0, this.width, this.height);
+        // Draw image (imageData is a canvas element)
+        try {
+            ctx.drawImage(this.imageData, 0, 0, this.width, this.height);
+        } catch (e) {
+            console.error('Error drawing piece image:', e);
+            // Fallback: draw colored rectangle
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(0, 0, this.width, this.height);
+        }
 
-        // Draw outline
+        ctx.restore();
+
+        // Draw outline outside of clip
+        ctx.save();
+        ctx.translate(this.x, this.y);
         if (this.shape) {
             this.shape.createPath(ctx, this.width, this.height);
-            ctx.strokeStyle = highlight ? '#667eea' : 'rgba(0,0,0,0.3)';
-            ctx.lineWidth = highlight ? 3 : 1;
+            ctx.strokeStyle = highlight ? '#667eea' : 'rgba(0,0,0,0.5)';
+            ctx.lineWidth = highlight ? 3 : 2;
             ctx.stroke();
         }
-
         ctx.restore();
     }
 
@@ -206,33 +220,52 @@ class PieceShape {
     drawTab(ctx, x1, y1, x2, y2, size, isOut) {
         const horizontal = y1 === y2;
         const direction = isOut ? 1 : -1;
-        const mid = horizontal ?
-            { x: (x1 + x2) / 2, y: y1 } :
-            { x: x1, y: (y1 + y2) / 2 };
 
         if (horizontal) {
+            // Horizontal edge (top or bottom)
             const dir = x2 > x1 ? 1 : -1;
-            ctx.lineTo(mid.x - size * dir * 0.5, mid.y);
-            ctx.quadraticCurveTo(
-                mid.x - size * dir * 0.2, mid.y + size * direction,
-                mid.x, mid.y + size * direction
+            const midX = (x1 + x2) / 2;
+            const tabRadius = Math.abs(size) * 0.3;
+
+            // Draw to start of tab
+            ctx.lineTo(midX - tabRadius * dir, y1);
+
+            // Draw tab using bezier curve for smoother shape
+            ctx.bezierCurveTo(
+                midX - tabRadius * dir, y1 + size * direction * 0.2,
+                midX - tabRadius * dir * 0.5, y1 + size * direction,
+                midX, y1 + size * direction
             );
-            ctx.quadraticCurveTo(
-                mid.x + size * dir * 0.2, mid.y + size * direction,
-                mid.x + size * dir * 0.5, mid.y
+            ctx.bezierCurveTo(
+                midX + tabRadius * dir * 0.5, y1 + size * direction,
+                midX + tabRadius * dir, y1 + size * direction * 0.2,
+                midX + tabRadius * dir, y1
             );
+
+            // Complete the edge
             ctx.lineTo(x2, y2);
         } else {
+            // Vertical edge (left or right)
             const dir = y2 > y1 ? 1 : -1;
-            ctx.lineTo(mid.x, mid.y - size * dir * 0.5);
-            ctx.quadraticCurveTo(
-                mid.x + size * direction, mid.y - size * dir * 0.2,
-                mid.x + size * direction, mid.y
+            const midY = (y1 + y2) / 2;
+            const tabRadius = Math.abs(size) * 0.3;
+
+            // Draw to start of tab
+            ctx.lineTo(x1, midY - tabRadius * dir);
+
+            // Draw tab using bezier curve for smoother shape
+            ctx.bezierCurveTo(
+                x1 + size * direction * 0.2, midY - tabRadius * dir,
+                x1 + size * direction, midY - tabRadius * dir * 0.5,
+                x1 + size * direction, midY
             );
-            ctx.quadraticCurveTo(
-                mid.x + size * direction, mid.y + size * dir * 0.2,
-                mid.x, mid.y + size * dir * 0.5
+            ctx.bezierCurveTo(
+                x1 + size * direction, midY + tabRadius * dir * 0.5,
+                x1 + size * direction * 0.2, midY + tabRadius * dir,
+                x1, midY + tabRadius * dir
             );
+
+            // Complete the edge
             ctx.lineTo(x2, y2);
         }
     }
@@ -417,6 +450,7 @@ class DragController {
         this.draggedGroup = null;
         this.offset = { x: 0, y: 0 };
         this.isDragging = false;
+        this.hasMoved = false;
 
         this.setupEventListeners();
     }
@@ -465,6 +499,7 @@ class DragController {
 
         if (piece) {
             this.isDragging = true;
+            this.hasMoved = false;
             this.draggedPiece = piece;
             this.draggedGroup = piece.group;
             this.offset = {
@@ -497,11 +532,16 @@ class DragController {
             this.draggedPiece.moveTo(newX, newY);
         }
 
-        gameState.progress.moves++;
+        this.hasMoved = true;
     }
 
     handleEnd(e) {
         if (!this.isDragging || !this.draggedPiece) return;
+
+        // Increment move counter only if piece was actually moved
+        if (this.hasMoved) {
+            gameState.progress.moves++;
+        }
 
         // Check for snapping
         this.checkSnap();
@@ -509,6 +549,7 @@ class DragController {
         this.isDragging = false;
         this.draggedPiece = null;
         this.draggedGroup = null;
+        this.hasMoved = false;
     }
 
     checkSnap() {
@@ -594,6 +635,11 @@ class DragController {
                 group.pieces.forEach(p => p.isPlaced = true);
             }
         });
+
+        // Update display immediately
+        if (game && game.progressTracker) {
+            game.progressTracker.updateDisplay();
+        }
 
         // Check completion
         if (gameState.progress.placedPieces === gameState.progress.totalPieces) {
@@ -703,10 +749,16 @@ class GameRenderer {
         this.canvas.clear();
         const ctx = this.canvas.getContext();
 
-        // Render ghost image
-        if (gameState.settings.showGhost && this.image) {
+        // Render ghost image centered
+        if (gameState.settings.showGhost && this.image && gameState.ghostArea) {
             ctx.globalAlpha = gameState.settings.ghostOpacity;
-            ctx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
+            ctx.drawImage(
+                this.image,
+                gameState.ghostArea.x,
+                gameState.ghostArea.y,
+                gameState.ghostArea.width,
+                gameState.ghostArea.height
+            );
             ctx.globalAlpha = 1.0;
         }
 
@@ -1026,28 +1078,46 @@ class PuzzleGame {
         const difficulty = getDifficulty();
         const canvasElement = document.getElementById('game-canvas');
 
-        // Setup canvas
-        const maxWidth = Math.min(window.innerWidth - 100, 1000);
-        const maxHeight = Math.min(window.innerHeight - 250, 700);
-        const aspectRatio = gameState.image.width / gameState.image.height;
-
-        let canvasWidth, canvasHeight;
-        if (aspectRatio > maxWidth / maxHeight) {
-            canvasWidth = maxWidth;
-            canvasHeight = maxWidth / aspectRatio;
-        } else {
-            canvasHeight = maxHeight;
-            canvasWidth = maxHeight * aspectRatio;
-        }
+        // Setup canvas - use full available space
+        const canvasWidth = window.innerWidth - 40;
+        const canvasHeight = window.innerHeight - 200;
 
         this.canvas = new GameCanvas(canvasElement);
         this.canvas.resize(canvasWidth, canvasHeight);
 
-        // Generate puzzle
-        const scaledImage = this.scaleImage(gameState.image, canvasWidth, canvasHeight);
+        // Calculate ghost image size (centered)
+        const maxGhostWidth = Math.min(canvasWidth * 0.6, 800);
+        const maxGhostHeight = Math.min(canvasHeight * 0.8, 600);
+        const aspectRatio = gameState.image.width / gameState.image.height;
+
+        let ghostWidth, ghostHeight;
+        if (aspectRatio > maxGhostWidth / maxGhostHeight) {
+            ghostWidth = maxGhostWidth;
+            ghostHeight = maxGhostWidth / aspectRatio;
+        } else {
+            ghostHeight = maxGhostHeight;
+            ghostWidth = maxGhostHeight * aspectRatio;
+        }
+
+        // Store ghost position for rendering
+        gameState.ghostArea = {
+            x: (canvasWidth - ghostWidth) / 2,
+            y: (canvasHeight - ghostHeight) / 2,
+            width: ghostWidth,
+            height: ghostHeight
+        };
+
+        // Generate puzzle based on ghost size
+        const scaledImage = this.scaleImage(gameState.image, ghostWidth, ghostHeight);
         gameState.pieces = PuzzleGenerator.generate(scaledImage, difficulty.rows, difficulty.cols);
         gameState.groups = [];
         gameState.progress.totalPieces = gameState.pieces.length;
+
+        // Adjust piece positions to ghost area
+        gameState.pieces.forEach(piece => {
+            piece.gridX += gameState.ghostArea.x;
+            piece.gridY += gameState.ghostArea.y;
+        });
 
         // Shuffle pieces
         this.shufflePieces();
@@ -1080,21 +1150,50 @@ class PuzzleGame {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        const scaledImg = new Image();
-        scaledImg.src = canvas.toDataURL();
-        scaledImg.width = width;
-        scaledImg.height = height;
-        return scaledImg;
+        // Return the canvas directly - drawImage can use canvas as source
+        return canvas;
     }
 
     shufflePieces() {
         const canvasWidth = this.canvas.width;
         const canvasHeight = this.canvas.height;
-        const margin = 50;
+        const margin = 20;
+        const ghostArea = gameState.ghostArea;
 
         gameState.pieces.forEach(piece => {
-            piece.x = margin + Math.random() * (canvasWidth - piece.width - margin * 2);
-            piece.y = margin + Math.random() * (canvasHeight - piece.height - margin * 2);
+            let x, y;
+            let attempts = 0;
+
+            // Try to place pieces outside ghost area
+            do {
+                x = margin + Math.random() * (canvasWidth - piece.width - margin * 2);
+                y = margin + Math.random() * (canvasHeight - piece.height - margin * 2);
+                attempts++;
+
+                // After 50 attempts, allow placement anywhere
+                if (attempts > 50) break;
+
+                // Check if piece overlaps with ghost area center
+                const pieceCenter = { x: x + piece.width / 2, y: y + piece.height / 2 };
+                const ghostCenter = {
+                    x: ghostArea.x + ghostArea.width / 2,
+                    y: ghostArea.y + ghostArea.height / 2
+                };
+
+                // Keep pieces away from the center of ghost area
+                const distance = Math.sqrt(
+                    Math.pow(pieceCenter.x - ghostCenter.x, 2) +
+                    Math.pow(pieceCenter.y - ghostCenter.y, 2)
+                );
+
+                // Accept if piece is far enough from ghost center
+                if (distance > Math.min(ghostArea.width, ghostArea.height) * 0.4) {
+                    break;
+                }
+            } while (attempts < 50);
+
+            piece.x = x;
+            piece.y = y;
         });
     }
 

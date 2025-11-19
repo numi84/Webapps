@@ -5,7 +5,9 @@
 
 **Erwartetes Verhalten:** Ein Zug sollte gezählt werden, wenn ein Puzzle-Teil einmal aufgenommen und wieder losgelassen wird (1 Pick + 1 Drop = 1 Zug).
 
-**Status:** Offen
+**Status:** ✅ Behoben
+
+**Lösung:** Der Züge-Zähler wird jetzt nur in `handleEnd()` inkrementiert, wenn das Teil tatsächlich bewegt wurde (`hasMoved` Flag).
 
 ---
 
@@ -14,7 +16,9 @@
 
 **Erwartetes Verhalten:** Die Fortschrittsanzeige sollte sich aktualisieren, wenn Puzzle-Teile korrekt platziert werden.
 
-**Status:** Offen
+**Status:** ✅ Behoben
+
+**Lösung:** `updateDisplay()` wird jetzt sofort in `checkPlacement()` aufgerufen, wenn sich der Fortschritt ändert.
 
 ---
 
@@ -23,7 +27,9 @@
 
 **Erwartetes Verhalten:** Puzzle-Teile sollten im gesamten verfügbaren Bildschirmbereich platzierbar sein, nicht nur in einem eingeschränkten Bereich.
 
-**Status:** Offen
+**Status:** ✅ Behoben
+
+**Lösung:** Canvas nutzt jetzt den gesamten verfügbaren Viewport. Ghost-Bild ist zentriert (60% der Canvas-Breite). Puzzle-Teile werden auf dem gesamten Canvas verteilt, mit Abstand zum Ghost-Bereich.
 
 ---
 
@@ -32,7 +38,9 @@
 
 **Erwartetes Verhalten:** Jedes Puzzle-Teil sollte den entsprechenden Bildausschnitt des Originalbildes anzeigen.
 
-**Status:** Offen
+**Status:** ✅ Behoben
+
+**Lösung:** `scaleImage()` gibt jetzt direkt das Canvas-Element zurück statt ein asynchrones Image-Element. Die `render()` Funktion wurde verbessert, um Bilddaten korrekt mit Clipping zu zeichnen.
 
 ---
 
@@ -41,10 +49,12 @@
 
 **Erwartetes Verhalten:** Die Noppen (Tabs) und Aussparungen (Blanks) sollten komplementär zueinander sein, sodass Teile präzise ineinander passen.
 
-**Status:** Offen
+**Status:** ✅ Behoben
+
+**Lösung:** `drawTab()` Funktion komplett überarbeitet mit besseren Bezier-Kurven und konsistenten Kontrollpunkten für symmetrische Noppen.
 
 ---
 
 ## Notizen
-- Alle Issues müssen behoben werden, bevor die App als vollständig betrachtet werden kann
-- Die Issues wurden am 2025-11-19 dokumentiert
+- ✅ Alle Issues wurden am 2025-11-19 behoben
+- Die Puzzle-App ist nun vollständig funktionsfähig
