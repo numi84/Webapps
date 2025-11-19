@@ -60,7 +60,7 @@ export const PowerupConfig = {
         name: 'Klebriger Schläger'
     },
     [PowerupType.LASER]: {
-        duration: -1,
+        duration: 20000,
         color: '#FF5722',
         icon: '🔫',
         name: 'Laser',

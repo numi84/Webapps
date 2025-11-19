@@ -8,6 +8,7 @@ export class Paddle {
         this.speed = 8;
         this.color = '#4CAF50';
         this.targetX = x;
+        this.lastX = x;
 
         // Special states
         this.hasLaser = false;
@@ -18,6 +19,9 @@ export class Paddle {
     }
 
     update(input, canvasWidth, deltaTime) {
+        // Store last position for velocity calculation
+        this.lastX = this.x;
+
         // Mouse/touch control
         if (input.mouse.active) {
             this.targetX = input.mouse.x - this.width / 2;
