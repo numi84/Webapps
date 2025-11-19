@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breakout Game</title>
+    <link rel="stylesheet" href="breakout.css">
+</head>
+<body>
+    <div class="game-wrapper">
+        <!-- Main Menu -->
+        <div id="mainMenu" class="screen active">
+            <div class="menu-container">
+                <h1 class="game-title">
+                    <span class="title-main">BREAKOUT</span>
+                    <span class="title-sub">Master Edition</span>
+                </h1>
+                <nav class="main-nav">
+                    <button class="menu-btn" data-action="play">
+                        <span class="btn-icon">▶</span>
+                        <span class="btn-text">Spielen</span>
+                    </button>
+                    <button class="menu-btn" data-action="editor">
+                        <span class="btn-icon">✏</span>
+                        <span class="btn-text">Level Editor</span>
+                    </button>
+                    <button class="menu-btn" data-action="settings">
+                        <span class="btn-icon">⚙</span>
+                        <span class="btn-text">Einstellungen</span>
+                    </button>
+                    <button class="menu-btn" data-action="highscores">
+                        <span class="btn-icon">🏆</span>
+                        <span class="btn-text">Highscores</span>
+                    </button>
+                    <button class="menu-btn" data-action="achievements">
+                        <span class="btn-icon">⭐</span>
+                        <span class="btn-text">Achievements</span>
+                    </button>
+                    <button class="menu-btn" data-action="howto">
+                        <span class="btn-icon">?</span>
+                        <span class="btn-text">Anleitung</span>
+                    </button>
+                </nav>
+                <a href="../../index.html" class="back-button">← Zurück zum Hub</a>
+            </div>
+        </div>
+
+        <!-- Level Selection -->
+        <div id="levelSelect" class="screen">
+            <div class="screen-header">
+                <button class="back-btn" data-action="backToMenu">←</button>
+                <h2>Level Auswahl</h2>
+            </div>
+            <div class="level-tabs">
+                <button class="tab-btn active" data-tab="premade">Vorgefertigte Level</button>
+                <button class="tab-btn" data-tab="custom">Eigene Level</button>
+            </div>
+            <div id="levelGrid" class="level-grid"></div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="screen">
+            <div class="game-container">
+                <!-- HUD -->
+                <div class="hud">
+                    <div class="hud-left">
+                        <div class="hud-item">
+                            <span class="hud-label">Score:</span>
+                            <span id="scoreDisplay" class="hud-value">0</span>
+                        </div>
+                        <div class="hud-item">
+                            <span class="hud-label">Level:</span>
+                            <span id="levelDisplay" class="hud-value">1</span>
+                        </div>
+                        <div class="hud-item">
+                            <span class="hud-label">High:</span>
+                            <span id="highScoreDisplay" class="hud-value">0</span>
+                        </div>
+                    </div>
+                    <div class="hud-center">
+                        <div id="comboDisplay" class="combo-display"></div>
+                    </div>
+                    <div class="hud-right">
+                        <div id="livesDisplay" class="lives-display"></div>
+                        <button class="icon-btn" id="pauseBtn">⏸</button>
+                    </div>
+                </div>
+
+                <!-- Active Powerups -->
+                <div id="activePowerups" class="active-powerups"></div>
+
+                <!-- Canvas -->
+                <canvas id="gameCanvas"></canvas>
+
+                <!-- Start Overlay -->
+                <div id="startOverlay" class="game-overlay">
+                    <button id="startBtn" class="action-btn">Start</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pause Menu -->
+        <div id="pauseMenu" class="modal">
+            <div class="modal-content">
+                <h2>Pause</h2>
+                <div class="modal-buttons">
+                    <button class="action-btn" data-action="resume">Weiterspielen</button>
+                    <button class="action-btn" data-action="restart">Neustart</button>
+                    <button class="action-btn" data-action="settings">Einstellungen</button>
+                    <button class="action-btn secondary" data-action="quit">Hauptmenü</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Level Complete -->
+        <div id="levelComplete" class="modal">
+            <div class="modal-content">
+                <h2>Level Geschafft!</h2>
+                <div id="levelStars" class="stars-display"></div>
+                <div class="stats-display">
+                    <div class="stat-item">
+                        <span class="stat-label">Score:</span>
+                        <span id="finalScore" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Bonus:</span>
+                        <span id="bonusScore" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total:</span>
+                        <span id="totalScore" class="stat-value">0</span>
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button class="action-btn" data-action="nextLevel">Nächstes Level</button>
+                    <button class="action-btn secondary" data-action="levelSelect">Level Auswahl</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over -->
+        <div id="gameOver" class="modal">
+            <div class="modal-content">
+                <h2>Game Over</h2>
+                <div class="stats-display">
+                    <div class="stat-item">
+                        <span class="stat-label">Final Score:</span>
+                        <span id="gameOverScore" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">High Score:</span>
+                        <span id="gameOverHighScore" class="stat-value">0</span>
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button class="action-btn" data-action="retry">Nochmal</button>
+                    <button class="action-btn secondary" data-action="levelSelect">Level Auswahl</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settingsScreen" class="screen">
+            <div class="screen-header">
+                <button class="back-btn" data-action="backToMenu">←</button>
+                <h2>Einstellungen</h2>
+            </div>
+            <div class="settings-container">
+                <div class="settings-section">
+                    <h3>Gameplay</h3>
+                    <div class="setting-item">
+                        <label>Schwierigkeit:</label>
+                        <select id="difficulty">
+                            <option value="easy">Einfach</option>
+                            <option value="normal" selected>Normal</option>
+                            <option value="hard">Schwer</option>
+                            <option value="expert">Expert</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Hintergrund</h3>
+                    <div class="setting-item">
+                        <label>Typ:</label>
+                        <select id="backgroundType">
+                            <option value="solid">Einfarbig</option>
+                            <option value="gradient">Farbverlauf</option>
+                            <option value="space">Weltraum</option>
+                            <option value="underwater">Unterwasser</option>
+                            <option value="retro">Retro</option>
+                            <option value="particles">Partikel</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>Animation:</label>
+                        <input type="checkbox" id="animatedBackground" checked>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Grafik</h3>
+                    <div class="setting-item">
+                        <label>Partikel-Effekte:</label>
+                        <select id="particleQuality">
+                            <option value="low">Niedrig</option>
+                            <option value="medium" selected>Mittel</option>
+                            <option value="high">Hoch</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>Bildschirm-Shake:</label>
+                        <input type="checkbox" id="screenShake" checked>
+                    </div>
+                    <div class="setting-item">
+                        <label>Ball-Spur:</label>
+                        <input type="checkbox" id="ballTrail" checked>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Daten</h3>
+                    <div class="setting-item">
+                        <button class="action-btn secondary" id="exportSave">Speicherstand exportieren</button>
+                    </div>
+                    <div class="setting-item">
+                        <button class="action-btn secondary" id="importSave">Speicherstand importieren</button>
+                    </div>
+                    <div class="setting-item">
+                        <button class="action-btn danger" id="resetProgress">Fortschritt zurücksetzen</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Level Editor -->
+        <div id="editorScreen" class="screen">
+            <div class="screen-header">
+                <button class="back-btn" data-action="backToMenu">←</button>
+                <h2>Level Editor</h2>
+                <div class="editor-actions">
+                    <button class="icon-btn" id="editorSave" title="Speichern">💾</button>
+                    <button class="icon-btn" id="editorLoad" title="Laden">📁</button>
+                    <button class="icon-btn" id="editorTest" title="Testen">▶</button>
+                    <button class="icon-btn" id="editorExport" title="Exportieren">📤</button>
+                    <button class="icon-btn" id="editorClear" title="Alles löschen">🗑</button>
+                </div>
+            </div>
+            <div class="editor-container">
+                <div class="editor-sidebar">
+                    <h3>Block-Palette</h3>
+                    <div id="blockPalette" class="block-palette"></div>
+                    <h3>Werkzeuge</h3>
+                    <div class="tool-buttons">
+                        <button class="tool-btn active" data-tool="place">Platzieren</button>
+                        <button class="tool-btn" data-tool="erase">Löschen</button>
+                        <button class="tool-btn" data-tool="fill">Füllen</button>
+                    </div>
+                    <h3>Level Eigenschaften</h3>
+                    <div class="editor-properties">
+                        <div class="property-item">
+                            <label>Name:</label>
+                            <input type="text" id="levelName" placeholder="Mein Level">
+                        </div>
+                        <div class="property-item">
+                            <label>Schwierigkeit:</label>
+                            <select id="levelDifficulty">
+                                <option value="easy">Einfach</option>
+                                <option value="medium" selected>Mittel</option>
+                                <option value="hard">Schwer</option>
+                                <option value="expert">Expert</option>
+                            </select>
+                        </div>
+                        <div class="property-item">
+                            <label>Beschreibung:</label>
+                            <textarea id="levelDescription" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="editor-main">
+                    <canvas id="editorCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- High Scores Screen -->
+        <div id="highscoresScreen" class="screen">
+            <div class="screen-header">
+                <button class="back-btn" data-action="backToMenu">←</button>
+                <h2>Highscores</h2>
+            </div>
+            <div id="highscoresList" class="highscores-list"></div>
+        </div>
+
+        <!-- Achievements Screen -->
+        <div id="achievementsScreen" class="screen">
+            <div class="screen-header">
+                <button class="back-btn" data-action="backToMenu">←</button>
+                <h2>Achievements</h2>
+            </div>
+            <div id="achievementsList" class="achievements-grid"></div>
+        </div>
+
+        <!-- How To Play Screen -->
+        <div id="howtoScreen" class="screen">
+            <div class="screen-header">
+                <button class="back-btn" data-action="backToMenu">←</button>
+                <h2>Anleitung</h2>
+            </div>
+            <div class="howto-content">
+                <section class="howto-section">
+                    <h3>Spielziel</h3>
+                    <p>Zerstöre alle Blöcke mit dem Ball, ohne dass er unten herausfällt. Sammle Powerups und erreiche die höchste Punktzahl!</p>
+                </section>
+                <section class="howto-section">
+                    <h3>Steuerung</h3>
+                    <ul>
+                        <li><strong>Maus:</strong> Bewege den Schläger</li>
+                        <li><strong>Pfeiltasten:</strong> Schläger nach links/rechts</li>
+                        <li><strong>Leertaste:</strong> Ball starten / Laser schießen</li>
+                        <li><strong>ESC / P:</strong> Pause</li>
+                        <li><strong>Touch:</strong> Schläger ziehen (Mobile)</li>
+                    </ul>
+                </section>
+                <section class="howto-section">
+                    <h3>Block-Typen</h3>
+                    <div class="block-types">
+                        <div class="type-item">
+                            <span class="type-icon" style="background: #2196F3;">▢</span>
+                            <span class="type-name">Standard:</span>
+                            <span class="type-desc">1 Treffer</span>
+                        </div>
+                        <div class="type-item">
+                            <span class="type-icon" style="background: #FF5722;">▣</span>
+                            <span class="type-name">Hart:</span>
+                            <span class="type-desc">2-3 Treffer</span>
+                        </div>
+                        <div class="type-item">
+                            <span class="type-icon" style="background: #9E9E9E;">▦</span>
+                            <span class="type-name">Unzerstörbar:</span>
+                            <span class="type-desc">Kann nicht zerstört werden</span>
+                        </div>
+                        <div class="type-item">
+                            <span class="type-icon" style="background: #FF9800;">💥</span>
+                            <span class="type-name">Explosiv:</span>
+                            <span class="type-desc">Zerstört umliegende Blöcke</span>
+                        </div>
+                        <div class="type-item">
+                            <span class="type-icon" style="background: #00BCD4;">↔</span>
+                            <span class="type-name">Beweglich:</span>
+                            <span class="type-desc">Bewegt sich horizontal</span>
+                        </div>
+                        <div class="type-item">
+                            <span class="type-icon" style="background: rgba(255,255,255,0.2);">👻</span>
+                            <span class="type-name">Unsichtbar:</span>
+                            <span class="type-desc">Wird beim Treffen sichtbar</span>
+                        </div>
+                    </div>
+                </section>
+                <section class="howto-section">
+                    <h3>Powerups</h3>
+                    <div class="powerup-types">
+                        <div class="type-item">
+                            <span class="powerup-icon" style="background: #2196F3;">●●</span>
+                            <span class="type-name">Multi-Ball</span>
+                        </div>
+                        <div class="type-item">
+                            <span class="powerup-icon" style="background: #4CAF50;">↔</span>
+                            <span class="type-name">Breiter Schläger</span>
+                        </div>
+                        <div class="type-item">
+                            <span class="powerup-icon" style="background: #E91E63;">❤</span>
+                            <span class="type-name">Extra Leben</span>
+                        </div>
+                        <div class="type-item">
+                            <span class="powerup-icon" style="background: #FFD700;">⭐</span>
+                            <span class="type-name">Score-Bonus</span>
+                        </div>
+                        <div class="type-item">
+                            <span class="powerup-icon" style="background: #FF5722;">🔫</span>
+                            <span class="type-name">Laser</span>
+                        </div>
+                        <div class="type-item">
+                            <span class="powerup-icon" style="background: #FF6F00;">🔥</span>
+                            <span class="type-name">Fireball</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Background Canvas (behind everything) -->
+        <canvas id="backgroundCanvas" class="background-canvas"></canvas>
+    </div>
+
+    <!-- Load modules -->
+    <script type="module" src="breakout.js"></script>
+</body>
+</html>
