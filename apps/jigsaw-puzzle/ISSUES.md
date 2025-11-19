@@ -44,7 +44,7 @@
 
 ---
 
-## Issue 5: Puzzle-Noppen passen nicht zusammen
+## Issue 5: Puzzle-Noppen passen nicht zusammen (ursprünglicher Fix - UNVOLLSTÄNDIG)
 **Problem:** Die Puzzle-Noppen sind etwas willkürlich gewählt und passen nicht in die dafür vorgesehenen Gegenstücke.
 
 **Erwartetes Verhalten:** Die Noppen (Tabs) und Aussparungen (Blanks) sollten komplementär zueinander sein, sodass Teile präzise ineinander passen.
@@ -55,6 +55,68 @@
 
 ---
 
+## Issue 6: Completion Screen wird nicht angezeigt
+**Problem:** Wenn das Puzzle zusammengebaut wurde, wird kein "Fertig"-Screen angezeigt und der Timer läuft weiter.
+
+**Erwartetes Verhalten:** Bei Fertigstellung sollte der Completion-Screen erscheinen und der Timer stoppen.
+
+**Status:** ✅ Behoben
+
+**Lösung:** `checkPlacement()` wurde umgeschrieben, um ALLE Teile zu überprüfen (nicht nur Gruppen). Dadurch wird der Fortschritt korrekt erkannt und der Completion-Screen ausgelöst.
+
+---
+
+## Issue 7: Fortschritt bleibt bei 0%
+**Problem:** Die Fortschrittsanzeige bleibt konstant bei 0%, auch wenn Teile korrekt platziert werden.
+
+**Erwartetes Verhalten:** Der Fortschritt sollte sich erhöhen, wenn Teile korrekt positioniert werden.
+
+**Status:** ✅ Behoben
+
+**Lösung:** `checkPlacement()` prüft jetzt alle Teile einzeln statt nur Gruppen. Toleranz wurde auf 20 Pixel erhöht für bessere Erkennung.
+
+---
+
+## Issue 8: Beispielbilder zeigen falsche Bilder
+**Problem:** Die angezeigten Beispielbilder sind nicht die, die geladen werden - beim Anklicken erscheint ein anderes Bild.
+
+**Erwartetes Verhalten:** Das angezeigte Beispielbild sollte dem geladenen Bild entsprechen.
+
+**Status:** ✅ Behoben
+
+**Lösung:** Picsum.photos URLs verwenden jetzt Seeds (`/seed/puzzle1/`) statt `random=` Parameter, um konsistente Bilder zu garantieren.
+
+---
+
+## Issue 9: Vorschaubild stimmt nicht überein
+**Problem:** Das Vorschaubild zeigt ein anderes Bild als das Puzzle.
+
+**Erwartetes Verhalten:** Vorschaubild und Puzzle sollten identisch sein.
+
+**Status:** ✅ Behoben
+
+**Lösung:** Durch die Verwendung von Seed-basierten URLs (Issue 8) ist auch das Vorschaubild jetzt konsistent.
+
+---
+
+## Issue 10: Puzzle-Noppen sind invertiert (KRITISCHER BUG)
+**Problem:** Ausbuchtungen passen zu Ausbuchtungen und Vertiefungen zu Vertiefungen, statt dass Ausbuchtungen zu Vertiefungen passen.
+
+**Erwartetes Verhalten:** Ausbuchtungen ('out') sollten zu Vertiefungen ('in') passen.
+
+**Status:** ✅ Behoben
+
+**Lösung:** Die `createPath()` Funktion in `PieceShape` wurde korrigiert. Für Top- und Left-Kanten wird die Richtung invertiert (`this.top === 'in'` statt `'out'`), sodass:
+- Top 'out' → Tab geht nach OBEN (außerhalb)
+- Right 'out' → Tab geht nach RECHTS (außerhalb)
+- Bottom 'out' → Tab geht nach UNTEN (außerhalb)
+- Left 'out' → Tab geht nach LINKS (außerhalb)
+
+Die Invertierung in `generateShapes()` stellt sicher, dass benachbarte Teile komplementäre Kanten haben.
+
+---
+
 ## Notizen
-- ✅ Alle Issues wurden am 2025-11-19 behoben
+- ✅ Alle 10 Issues wurden am 2025-11-19 behoben
 - Die Puzzle-App ist nun vollständig funktionsfähig
+- Issue 10 war der kritischste Bug, der die gesamte Puzzle-Mechanik betraf

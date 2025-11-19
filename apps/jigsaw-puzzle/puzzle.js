@@ -14,10 +14,10 @@ const SNAP_DISTANCE = 25;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 const EXAMPLE_IMAGES = [
-    'https://picsum.photos/800/600?random=1',
-    'https://picsum.photos/800/600?random=2',
-    'https://picsum.photos/800/600?random=3',
-    'https://picsum.photos/800/600?random=4'
+    'https://picsum.photos/seed/puzzle1/800/600',
+    'https://picsum.photos/seed/puzzle2/800/600',
+    'https://picsum.photos/seed/puzzle3/800/600',
+    'https://picsum.photos/seed/puzzle4/800/600'
 ];
 
 // Game State
@@ -186,32 +186,32 @@ class PieceShape {
         // Start at top-left
         ctx.moveTo(0, 0);
 
-        // Top edge
+        // Top edge - 'out' means tab goes UP (invert direction)
         if (this.top === 'flat') {
             ctx.lineTo(width, 0);
         } else {
-            this.drawTab(ctx, 0, 0, width, 0, tabHeight, this.top === 'out');
+            this.drawTab(ctx, 0, 0, width, 0, tabHeight, this.top === 'in');
         }
 
-        // Right edge
+        // Right edge - 'out' means tab goes RIGHT (normal direction)
         if (this.right === 'flat') {
             ctx.lineTo(width, height);
         } else {
             this.drawTab(ctx, width, 0, width, height, tabWidth, this.right === 'out');
         }
 
-        // Bottom edge
+        // Bottom edge - 'out' means tab goes DOWN (normal direction)
         if (this.bottom === 'flat') {
             ctx.lineTo(0, height);
         } else {
             this.drawTab(ctx, width, height, 0, height, tabHeight, this.bottom === 'out');
         }
 
-        // Left edge
+        // Left edge - 'out' means tab goes LEFT (invert direction)
         if (this.left === 'flat') {
             ctx.lineTo(0, 0);
         } else {
-            this.drawTab(ctx, 0, height, 0, 0, tabWidth, this.left === 'out');
+            this.drawTab(ctx, 0, height, 0, 0, tabWidth, this.left === 'in');
         }
 
         ctx.closePath();
@@ -387,12 +387,26 @@ class PuzzleGenerator {
         for (let row = 0; row < rows; row++) {
             shapes[row] = [];
             for (let col = 0; col < cols; col++) {
+                // horizontal[row][col] is the TOP edge of piece at (row, col)
+                // If it's 'out', this piece has a tab going UP
                 const top = horizontal[row][col];
-                const bottom = horizontal[row + 1][col] === 'out' ? 'in' :
-                             horizontal[row + 1][col] === 'in' ? 'out' : 'flat';
+
+                // horizontal[row + 1][col] is the TOP edge of piece at (row+1, col)
+                // which is the BOTTOM edge of THIS piece
+                // We need to INVERT it so tabs match with blanks
+                const bottomEdge = horizontal[row + 1][col];
+                const bottom = bottomEdge === 'out' ? 'in' :
+                              bottomEdge === 'in' ? 'out' : 'flat';
+
+                // vertical[row][col] is the LEFT edge of piece at (row, col)
                 const left = vertical[row][col];
-                const right = vertical[row][col + 1] === 'out' ? 'in' :
-                            vertical[row][col + 1] === 'in' ? 'out' : 'flat';
+
+                // vertical[row][col + 1] is the LEFT edge of piece at (row, col+1)
+                // which is the RIGHT edge of THIS piece
+                // We need to INVERT it
+                const rightEdge = vertical[row][col + 1];
+                const right = rightEdge === 'out' ? 'in' :
+                             rightEdge === 'in' ? 'out' : 'flat';
 
                 shapes[row][col] = new PieceShape(top, right, bottom, left);
             }
@@ -622,17 +636,18 @@ class DragController {
     checkPlacement() {
         // Update placed pieces count
         gameState.progress.placedPieces = 0;
+        const tolerance = 20; // Increased tolerance for better detection
 
-        gameState.groups.forEach(group => {
-            const allCorrect = group.pieces.every(piece => {
-                const tolerance = 5;
-                return Math.abs(piece.x - piece.gridX) < tolerance &&
-                       Math.abs(piece.y - piece.gridY) < tolerance;
-            });
+        // Check all pieces (both in groups and standalone)
+        this.pieces.forEach(piece => {
+            const isCorrect = Math.abs(piece.x - piece.gridX) < tolerance &&
+                             Math.abs(piece.y - piece.gridY) < tolerance;
 
-            if (allCorrect) {
-                gameState.progress.placedPieces += group.pieces.length;
-                group.pieces.forEach(p => p.isPlaced = true);
+            if (isCorrect) {
+                piece.isPlaced = true;
+                gameState.progress.placedPieces++;
+            } else {
+                piece.isPlaced = false;
             }
         });
 
