@@ -15,6 +15,8 @@ export class Ball {
         this.isFireball = false;
         this.isSticky = false;
         this.isMagnetic = false;
+        this.stuckToPaddle = false;
+        this.paddleOffset = 0;
     }
 
     reset(x, y) {

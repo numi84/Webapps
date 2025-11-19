@@ -6,6 +6,7 @@ import { ParticleSystem } from './modules/ParticleSystem.js';
 import { BackgroundManager } from './modules/BackgroundManager.js';
 import { SaveManager } from './modules/SaveManager.js';
 import { InputManager } from './modules/InputManager.js';
+import { SoundManager } from './modules/SoundManager.js';
 
 // Game States
 const GameState = {
@@ -36,6 +37,7 @@ class BreakoutGame {
         this.input = new InputManager(this.canvas);
         this.particles = new ParticleSystem(200);
         this.backgroundManager = new BackgroundManager(this.bgCanvas);
+        this.soundManager = new SoundManager();
 
         // Game objects
         this.balls = [];
@@ -487,7 +489,24 @@ class BreakoutGame {
     launchBall() {
         const inactiveBall = this.balls.find(b => !b.active);
         if (inactiveBall) {
-            inactiveBall.launch(-Math.PI / 4 + (Math.random() - 0.5) * 0.3);
+            // Calculate angle based on paddle movement if ball is stuck
+            let angle = -Math.PI / 4 + (Math.random() - 0.5) * 0.3;
+
+            if (inactiveBall.stuckToPaddle) {
+                // Get paddle velocity (difference from last frame)
+                const paddleVelX = this.paddle.x - this.paddle.lastX;
+
+                // Influence angle based on paddle movement
+                const velocityInfluence = paddleVelX * 0.05; // Adjust sensitivity
+                angle = -Math.PI / 3 + velocityInfluence;
+
+                // Clamp angle to reasonable range
+                angle = Math.max(-Math.PI * 0.75, Math.min(-Math.PI * 0.25, angle));
+
+                inactiveBall.stuckToPaddle = false;
+            }
+
+            inactiveBall.launch(angle);
             document.getElementById('startOverlay').style.display = 'none';
         }
     }
@@ -498,6 +517,7 @@ class BreakoutGame {
             positions.forEach(pos => {
                 this.lasers.push(new Laser(pos.x, pos.y));
             });
+            this.soundManager.playLaserShoot();
         }
     }
 
@@ -561,6 +581,15 @@ class BreakoutGame {
         // Update balls
         for (let i = this.balls.length - 1; i >= 0; i--) {
             const ball = this.balls[i];
+
+            // If ball is stuck to paddle (sticky or magnet), move with paddle
+            if (ball.stuckToPaddle && !ball.active) {
+                const pBounds = this.paddle.getBounds();
+                ball.x = pBounds.centerX + ball.paddleOffset;
+                ball.y = this.paddle.y - ball.radius;
+                continue;
+            }
+
             const lost = ball.update(deltaTime, this.canvas.width, this.canvas.height);
 
             if (lost) {
@@ -618,10 +647,11 @@ class BreakoutGame {
             bBounds.y < pBounds.y + pBounds.height &&
             bBounds.y + bBounds.height > pBounds.y) {
 
-            if (this.paddle.isSticky) {
+            if (this.paddle.isSticky || ball.isMagnetic) {
                 ball.active = false;
-                ball.x = this.paddle.getBounds().centerX;
-                ball.y = this.paddle.y - ball.radius;
+                ball.stuckToPaddle = true;
+                ball.paddleOffset = ball.x - pBounds.centerX;
+                this.soundManager.playPaddleHit();
             } else {
                 // Calculate bounce angle based on hit position
                 const hitPos = (ball.x - pBounds.centerX) / (pBounds.width / 2);
@@ -631,12 +661,8 @@ class BreakoutGame {
                 ball.dx = Math.sin(angle) * ball.speed;
                 ball.dy = -Math.abs(Math.cos(angle) * ball.speed);
                 ball.y = pBounds.y - ball.radius;
-            }
 
-            // Magnet effect
-            if (ball.isMagnetic) {
-                const dx = pBounds.centerX - ball.x;
-                ball.dx += dx * 0.1;
+                this.soundManager.playPaddleHit();
             }
         }
     }
@@ -681,6 +707,12 @@ class BreakoutGame {
         this.combo++;
         this.comboTimer = 2000; // 2 seconds
 
+        // Sound effects
+        this.soundManager.playBlockDestroy();
+        if (this.combo > 1) {
+            this.soundManager.playCombo(this.combo);
+        }
+
         // Particles
         const bounds = block.getBounds();
         this.particles.emitBlockDestruction(bounds.centerX, bounds.centerY, block.getColor());
@@ -688,12 +720,14 @@ class BreakoutGame {
         // Explosive block
         if (block.type === BlockType.EXPLOSIVE) {
             this.particles.emitExplosion(bounds.centerX, bounds.centerY);
+            this.soundManager.playExplosion();
             this.explodeNearbyBlocks(block);
         }
 
         // Drop powerup
         if (Math.random() < 0.2) {
             this.dropPowerup(bounds.centerX, bounds.centerY);
+            this.soundManager.playPowerupDrop();
         }
 
         // Update stats
@@ -758,6 +792,7 @@ class BreakoutGame {
                     this.powerups.splice(i, 1);
                     this.activePowerups.push(powerup);
                     this.particles.emitPowerupCollect(powerup.x, powerup.y, powerup.color);
+                    this.soundManager.playPowerupCollect();
                     this.saveManager.updateStatistics({ powerupsCollected: 1 }, this.saveData);
                 }
                 // Remove if off screen
@@ -857,6 +892,7 @@ class BreakoutGame {
             }
         } else {
             this.lives--;
+            this.soundManager.playLoseLife();
         }
 
         if (this.lives <= 0) {
@@ -893,6 +929,9 @@ class BreakoutGame {
         if (this.score > this.highScore) stars = 2;
         if (perfectRun) stars = 3;
 
+        // Sound effect
+        this.soundManager.playLevelComplete();
+
         // Save progress
         this.saveManager.saveLevelScore(this.currentLevel, this.score, stars, perfectRun, this.saveData);
         this.saveManager.unlockLevel(this.currentLevel + 1, this.saveData);
@@ -918,6 +957,9 @@ class BreakoutGame {
 
     gameOver() {
         this.gameRunning = false;
+
+        // Sound effect
+        this.soundManager.playGameOver();
 
         document.getElementById('gameOverScore').textContent = this.score;
         document.getElementById('gameOverHighScore').textContent = this.highScore;
