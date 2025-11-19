@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jigsaw Puzzle - Puzzle mit eigenen Bildern</title>
+    <link rel="stylesheet" href="puzzle.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Upload Screen -->
+        <div id="upload-screen" class="screen active">
+            <div class="screen-content">
+                <header>
+                    <h1>🧩 Jigsaw Puzzle</h1>
+                    <p>Lade ein Bild hoch oder wähle ein Beispielbild</p>
+                </header>
+
+                <div class="upload-section">
+                    <div id="drop-zone" class="drop-zone">
+                        <div class="drop-zone-content">
+                            <div class="upload-icon">📁</div>
+                            <p class="upload-text">Bild hier ablegen oder klicken zum Hochladen</p>
+                            <p class="upload-hint">JPG, PNG, WebP (max 10MB)</p>
+                        </div>
+                        <input type="file" id="file-input" accept="image/*" style="display: none;">
+                    </div>
+
+                    <div id="preview-container" class="preview-container hidden">
+                        <img id="preview-image" alt="Vorschau">
+                        <button id="change-image-btn" class="btn btn-secondary">Anderes Bild wählen</button>
+                        <button id="continue-btn" class="btn btn-primary">Weiter</button>
+                    </div>
+                </div>
+
+                <div class="divider">
+                    <span>ODER</span>
+                </div>
+
+                <div class="example-images">
+                    <h3>Beispielbilder:</h3>
+                    <div class="example-grid" id="example-grid">
+                        <!-- Will be populated by JS -->
+                    </div>
+                </div>
+
+                <div class="back-link">
+                    <a href="../../index.html">← Zurück zur Übersicht</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="screen">
+            <div class="screen-content">
+                <header>
+                    <h1>🎮 Spiel-Einstellungen</h1>
+                    <p>Wähle den Schwierigkeitsgrad</p>
+                </header>
+
+                <div class="difficulty-section">
+                    <h3>Schwierigkeitsgrad:</h3>
+                    <div class="difficulty-grid">
+                        <div class="difficulty-card" data-difficulty="easy">
+                            <div class="difficulty-icon">😊</div>
+                            <h4>Einfach</h4>
+                            <p>3×4 = 12 Teile</p>
+                            <div class="grid-preview">
+                                <div class="preview-grid" style="--rows: 3; --cols: 4;"></div>
+                            </div>
+                        </div>
+
+                        <div class="difficulty-card active" data-difficulty="medium">
+                            <div class="difficulty-icon">🙂</div>
+                            <h4>Mittel</h4>
+                            <p>4×6 = 24 Teile</p>
+                            <div class="grid-preview">
+                                <div class="preview-grid" style="--rows: 4; --cols: 6;"></div>
+                            </div>
+                        </div>
+
+                        <div class="difficulty-card" data-difficulty="hard">
+                            <div class="difficulty-icon">😐</div>
+                            <h4>Schwer</h4>
+                            <p>6×8 = 48 Teile</p>
+                            <div class="grid-preview">
+                                <div class="preview-grid" style="--rows: 6; --cols: 8;"></div>
+                            </div>
+                        </div>
+
+                        <div class="difficulty-card" data-difficulty="expert">
+                            <div class="difficulty-icon">😤</div>
+                            <h4>Experte</h4>
+                            <p>8×12 = 96 Teile</p>
+                            <div class="grid-preview">
+                                <div class="preview-grid" style="--rows: 8; --cols: 12;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="custom-difficulty">
+                        <label>
+                            <input type="checkbox" id="custom-toggle">
+                            Eigene Anzahl:
+                        </label>
+                        <div id="custom-inputs" class="custom-inputs hidden">
+                            <input type="number" id="custom-rows" min="2" max="20" value="4" placeholder="Zeilen">
+                            <span>×</span>
+                            <input type="number" id="custom-cols" min="2" max="20" value="6" placeholder="Spalten">
+                            <span>=</span>
+                            <span id="custom-total">24</span>
+                            <span>Teile</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="options-section">
+                    <h3>Hilfe-Optionen:</h3>
+                    <div class="options-grid">
+                        <label class="option-item">
+                            <input type="checkbox" id="option-ghost" checked>
+                            <span>Ghost-Bild anzeigen</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="checkbox" id="option-preview" checked>
+                            <span>Vorschau-Fenster</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="checkbox" id="option-edges" checked>
+                            <span>Randteile hervorheben</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="checkbox" id="option-sound" checked>
+                            <span>Sound-Effekte</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-actions">
+                    <button id="back-to-upload-btn" class="btn btn-secondary">← Zurück</button>
+                    <button id="start-game-btn" class="btn btn-primary">Spiel starten</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="game-header">
+                <div class="game-info">
+                    <div class="info-item">
+                        <span class="info-label">Zeit:</span>
+                        <span id="timer-display" class="info-value">00:00</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Züge:</span>
+                        <span id="moves-display" class="info-value">0</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Fortschritt:</span>
+                        <span id="progress-display" class="info-value">0%</span>
+                    </div>
+                </div>
+                <div class="game-controls">
+                    <button id="help-btn" class="btn btn-icon" title="Hilfe">❓</button>
+                    <button id="settings-btn" class="btn btn-icon" title="Einstellungen">⚙️</button>
+                    <button id="reset-btn" class="btn btn-icon" title="Neu starten">🔄</button>
+                    <button id="menu-btn" class="btn btn-icon" title="Hauptmenü">🏠</button>
+                </div>
+            </div>
+
+            <div class="game-main">
+                <div class="canvas-container">
+                    <canvas id="game-canvas"></canvas>
+                    <div id="ghost-opacity-slider" class="ghost-slider hidden">
+                        <label>Ghost-Transparenz:</label>
+                        <input type="range" id="ghost-opacity" min="0" max="50" value="20">
+                        <span id="ghost-value">20%</span>
+                    </div>
+                </div>
+
+                <div id="preview-window" class="preview-window hidden">
+                    <div class="preview-header">
+                        <span>Vorschau</span>
+                        <button id="close-preview-btn" class="close-btn">×</button>
+                    </div>
+                    <div class="preview-content">
+                        <img id="preview-img" alt="Vorschau">
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-bar-container">
+                <div class="progress-bar">
+                    <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completion Screen -->
+        <div id="completion-screen" class="screen">
+            <div class="screen-content">
+                <div class="completion-content">
+                    <div class="completion-icon">🎉</div>
+                    <h1>Glückwunsch!</h1>
+                    <p>Du hast das Puzzle gelöst!</p>
+
+                    <div class="completion-stats">
+                        <div class="stat-item">
+                            <div class="stat-label">Zeit</div>
+                            <div class="stat-value" id="completion-time">00:00</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Züge</div>
+                            <div class="stat-value" id="completion-moves">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Schwierigkeit</div>
+                            <div class="stat-value" id="completion-difficulty">Mittel</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Teile</div>
+                            <div class="stat-value" id="completion-pieces">24</div>
+                        </div>
+                    </div>
+
+                    <div class="completion-image">
+                        <img id="completion-img" alt="Fertiges Puzzle">
+                    </div>
+
+                    <div class="completion-actions">
+                        <button id="new-puzzle-btn" class="btn btn-primary">Neues Puzzle</button>
+                        <button id="same-image-btn" class="btn btn-secondary">Gleiches Bild, andere Schwierigkeit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Einstellungen</h2>
+                    <button class="close-btn" id="close-settings-modal">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="modal-ghost" checked>
+                            Ghost-Bild anzeigen
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="modal-preview" checked>
+                            Vorschau-Fenster
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="modal-edges" checked>
+                            Randteile hervorheben
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="modal-sound" checked>
+                            Sound-Effekte
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="save-settings-btn" class="btn btn-primary">Speichern</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Modal -->
+        <div id="help-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Hilfe</h2>
+                    <button class="close-btn" id="close-help-modal">×</button>
+                </div>
+                <div class="modal-body">
+                    <h3>Steuerung:</h3>
+                    <ul>
+                        <li><strong>Maus:</strong> Klicken und Ziehen zum Bewegen</li>
+                        <li><strong>Touch:</strong> Tippen und Ziehen auf Mobilgeräten</li>
+                        <li><strong>Verbinden:</strong> Teile rasten automatisch ein, wenn sie nahe beieinander sind</li>
+                    </ul>
+                    <h3>Tipps:</h3>
+                    <ul>
+                        <li>Beginne mit den Randteilen</li>
+                        <li>Nutze das Ghost-Bild als Orientierung</li>
+                        <li>Verbundene Teile bewegen sich als Gruppe</li>
+                        <li>Dein Fortschritt wird automatisch gespeichert</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="puzzle.js"></script>
+</body>
+</html>
