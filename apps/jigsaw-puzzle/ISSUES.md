@@ -116,7 +116,23 @@ Die Invertierung in `generateShapes()` stellt sicher, dass benachbarte Teile kom
 
 ---
 
+## Issue 11: Puzzle-Noppen zeigen keinen Bildausschnitt
+**Problem:** Die Noppen/Tabs der Puzzle-Teile sind leer/transparent und zeigen keinen Bildausschnitt.
+
+**Erwartetes Verhalten:** Die Noppen sollten ebenfalls den entsprechenden Bildausschnitt anzeigen.
+
+**Status:** ✅ Behoben
+
+**Lösung:**
+- `cutImageForPiece()` erstellt jetzt ein Canvas mit 25% Padding auf allen Seiten
+- Das Bild wird mit diesem Padding gezeichnet, um die Tabs abzudecken
+- `render()` zeichnet das Bild mit dem negativen Offset (`-padding`), sodass die Tabs den korrekten Bildausschnitt anzeigen
+- Das Clipping sorgt dafür, dass nur die Puzzle-Form sichtbar ist, aber das Bild erstreckt sich über die gesamte Form inklusive Tabs
+
+---
+
 ## Notizen
-- ✅ Alle 10 Issues wurden am 2025-11-19 behoben
+- ✅ Alle 11 Issues wurden am 2025-11-19 behoben
 - Die Puzzle-App ist nun vollständig funktionsfähig
 - Issue 10 war der kritischste Bug, der die gesamte Puzzle-Mechanik betraf
+- Issue 11 verbessert die visuelle Qualität erheblich
