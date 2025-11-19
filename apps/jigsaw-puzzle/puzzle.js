@@ -71,6 +71,7 @@ class PuzzlePiece {
 
         // Rendering
         this.imageData = null;
+        this.tabPadding = 0;
         this.zIndex = id;
     }
 
@@ -90,9 +91,17 @@ class PuzzlePiece {
             ctx.clip();
         }
 
-        // Draw image (imageData is a canvas element)
+        // Draw image (imageData is a canvas element with padding for tabs)
         try {
-            ctx.drawImage(this.imageData, 0, 0, this.width, this.height);
+            const padding = this.tabPadding || 0;
+            // Draw the image offset by the padding so the tabs show correct image
+            ctx.drawImage(
+                this.imageData,
+                -padding, // x offset
+                -padding, // y offset
+                this.imageData.width, // source width
+                this.imageData.height // source height
+            );
         } catch (e) {
             console.error('Error drawing piece image:', e);
             // Fallback: draw colored rectangle
@@ -416,17 +425,32 @@ class PuzzleGenerator {
     }
 
     static cutImageForPiece(image, piece) {
+        // Add padding for tabs (20% on each side)
+        const tabPadding = Math.max(piece.width, piece.height) * 0.25;
+        const canvasWidth = piece.width + tabPadding * 2;
+        const canvasHeight = piece.height + tabPadding * 2;
+
         const canvas = document.createElement('canvas');
-        canvas.width = piece.width;
-        canvas.height = piece.height;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
         const ctx = canvas.getContext('2d');
 
-        // Draw the image section
+        // Draw the image section with padding offset
+        // The image should extend beyond the base rectangle to fill the tabs
         ctx.drawImage(
             image,
-            piece.gridX, piece.gridY, piece.width, piece.height,
-            0, 0, piece.width, piece.height
+            piece.gridX - tabPadding, // Source x (with padding)
+            piece.gridY - tabPadding, // Source y (with padding)
+            canvasWidth, // Source width
+            canvasHeight, // Source height
+            0, // Destination x
+            0, // Destination y
+            canvasWidth, // Destination width
+            canvasHeight // Destination height
         );
+
+        // Store the padding offset for rendering
+        piece.tabPadding = tabPadding;
 
         return canvas;
     }
