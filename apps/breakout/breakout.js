@@ -496,12 +496,18 @@ class BreakoutGame {
                 // Get paddle velocity (difference from last frame)
                 const paddleVelX = this.paddle.x - this.paddle.lastX;
 
+                // Determine base angle from captured angle
+                // If ball was coming from right (positive dx), launch left
+                // If ball was coming from left (negative dx), launch right
+                const capturedDx = Math.cos(inactiveBall.capturedAngle);
+                let baseAngle = capturedDx > 0 ? -Math.PI * 2/3 : -Math.PI / 3; // left or right
+
                 // Influence angle based on paddle movement
                 const velocityInfluence = paddleVelX * 0.05; // Adjust sensitivity
-                angle = -Math.PI / 3 + velocityInfluence;
+                angle = baseAngle + velocityInfluence;
 
-                // Clamp angle to reasonable range
-                angle = Math.max(-Math.PI * 0.75, Math.min(-Math.PI * 0.25, angle));
+                // Clamp angle to reasonable range (upward)
+                angle = Math.max(-Math.PI * 0.85, Math.min(-Math.PI * 0.15, angle));
 
                 inactiveBall.stuckToPaddle = false;
             }
@@ -593,6 +599,14 @@ class BreakoutGame {
             const lost = ball.update(deltaTime, this.canvas.width, this.canvas.height);
 
             if (lost) {
+                // Check if shield is active - bounce ball back instead of losing it
+                if (this.paddle.hasShield) {
+                    ball.y = this.canvas.height - ball.radius;
+                    ball.dy = -Math.abs(ball.dy); // Reverse direction upward
+                    this.soundManager.playPaddleHit();
+                    continue;
+                }
+
                 this.balls.splice(i, 1);
                 if (this.balls.length === 0) {
                     this.loseLife();
@@ -651,6 +665,10 @@ class BreakoutGame {
                 ball.active = false;
                 ball.stuckToPaddle = true;
                 ball.paddleOffset = ball.x - pBounds.centerX;
+                // Store the angle the ball was coming from
+                ball.capturedAngle = Math.atan2(ball.dy, ball.dx);
+                // Clear trail when caught
+                ball.trail = [];
                 this.soundManager.playPaddleHit();
             } else {
                 // Calculate bounce angle based on hit position
