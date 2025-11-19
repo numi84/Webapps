@@ -17,6 +17,7 @@ export class Ball {
         this.isMagnetic = false;
         this.stuckToPaddle = false;
         this.paddleOffset = 0;
+        this.capturedAngle = 0;
     }
 
     reset(x, y) {
