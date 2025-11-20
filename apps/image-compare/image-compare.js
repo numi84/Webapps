@@ -2,8 +2,16 @@ class ImageCompare {
     constructor() {
         this.imageA = null;
         this.imageB = null;
-        this.sensitivity = 30;
+        this.sensitivity = 70;
         this.diffData = null;
+
+        // Zoom and pan state
+        this.zoom = 1;
+        this.panX = 0;
+        this.panY = 0;
+        this.isPanning = false;
+        this.lastX = 0;
+        this.lastY = 0;
 
         this.initElements();
         this.attachEventListeners();
@@ -20,6 +28,15 @@ class ImageCompare {
         this.canvasOverlay = document.getElementById('canvasOverlay');
         this.canvasDiff = document.getElementById('canvasDiff');
 
+        // Minimaps
+        this.minimapA = document.getElementById('minimapA');
+        this.minimapB = document.getElementById('minimapB');
+        this.minimapOverlay = document.getElementById('minimapOverlay');
+        this.minimapDiff = document.getElementById('minimapDiff');
+
+        // Canvas containers
+        this.canvasContainers = document.querySelectorAll('.canvas-container');
+
         // Controls
         this.sensitivitySlider = document.getElementById('sensitivity');
         this.sensitivityValue = document.getElementById('sensitivityValue');
@@ -27,6 +44,12 @@ class ImageCompare {
         this.opacityValue = document.getElementById('opacityValue');
         this.compareBtn = document.getElementById('compareBtn');
         this.resetBtn = document.getElementById('resetBtn');
+
+        // Zoom controls
+        this.zoomInBtn = document.getElementById('zoomIn');
+        this.zoomOutBtn = document.getElementById('zoomOut');
+        this.zoomResetBtn = document.getElementById('zoomReset');
+        this.zoomValue = document.getElementById('zoomValue');
 
         // Views
         this.resultsSection = document.getElementById('resultsSection');
@@ -59,14 +82,74 @@ class ImageCompare {
         this.tabBtns.forEach(btn => {
             btn.addEventListener('click', (e) => this.switchView(e.target.dataset.view));
         });
+
+        // Zoom controls
+        this.zoomInBtn.addEventListener('click', () => this.handleZoom(0.2));
+        this.zoomOutBtn.addEventListener('click', () => this.handleZoom(-0.2));
+        this.zoomResetBtn.addEventListener('click', () => this.resetZoom());
+
+        // Mouse wheel zoom
+        this.canvasContainers.forEach(container => {
+            container.addEventListener('wheel', (e) => this.handleWheelZoom(e));
+            container.addEventListener('mousedown', (e) => this.startPan(e));
+            container.addEventListener('mousemove', (e) => this.pan(e));
+            container.addEventListener('mouseup', () => this.endPan());
+            container.addEventListener('mouseleave', () => this.endPan());
+        });
     }
 
-    handleImageUpload(event, imageId) {
+    async handleImageUpload(event, imageId) {
         const file = event.target.files[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
+        // Check if file is a PDF
+        if (file.type === 'application/pdf') {
+            await this.handlePdfUpload(file, imageId, event.target);
+        } else {
+            // Handle regular image files
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    if (imageId === 'A') {
+                        this.imageA = img;
+                    } else {
+                        this.imageB = img;
+                    }
+
+                    // Update upload label
+                    const label = event.target.nextElementSibling;
+                    label.querySelector('span:last-child').textContent = file.name;
+                    label.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+
+                    this.checkIfReadyToCompare();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    async handlePdfUpload(file, imageId, inputElement) {
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            const page = await pdf.getPage(1); // Get first page
+
+            // Set up canvas for PDF rendering
+            const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better quality
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+
+            // Render PDF page to canvas
+            await page.render({
+                canvasContext: context,
+                viewport: viewport
+            }).promise;
+
+            // Convert canvas to image
             const img = new Image();
             img.onload = () => {
                 if (imageId === 'A') {
@@ -76,15 +159,17 @@ class ImageCompare {
                 }
 
                 // Update upload label
-                const label = event.target.nextElementSibling;
-                label.querySelector('span:last-child').textContent = file.name;
+                const label = inputElement.nextElementSibling;
+                label.querySelector('span:last-child').textContent = file.name + ' (Seite 1)';
                 label.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
 
                 this.checkIfReadyToCompare();
             };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
+            img.src = canvas.toDataURL();
+        } catch (error) {
+            console.error('Fehler beim Laden der PDF:', error);
+            alert('Fehler beim Laden der PDF-Datei. Bitte versuchen Sie es erneut.');
+        }
     }
 
     checkIfReadyToCompare() {
@@ -116,6 +201,9 @@ class ImageCompare {
         // Show results
         this.resultsSection.classList.add('active');
         this.resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        // Initialize minimaps
+        this.updateMinimaps();
     }
 
     setCanvasDimensions(width, height) {
@@ -127,13 +215,22 @@ class ImageCompare {
 
     drawImageOnCanvas(canvas, image, width, height) {
         const ctx = canvas.getContext('2d');
+        ctx.save();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, width, height);
+
+        // Apply zoom and pan transformations
+        ctx.translate(this.panX + canvas.width / 2, this.panY + canvas.height / 2);
+        ctx.scale(this.zoom, this.zoom);
+        ctx.translate(-canvas.width / 2, -canvas.height / 2);
 
         // Center the image if it's smaller than canvas
         const x = (width - image.width) / 2;
         const y = (height - image.height) / 2;
         ctx.drawImage(image, x, y);
+
+        ctx.restore();
     }
 
     calculateDifferences(width, height) {
@@ -151,7 +248,8 @@ class ImageCompare {
 
         let totalPixels = width * height;
         let differentPixels = 0;
-        const threshold = this.sensitivity * 2.55; // Convert to 0-255 scale
+        // Inverted: 0 = less sensitive (high threshold), 100 = very sensitive (low threshold)
+        const threshold = (100 - this.sensitivity) * 2.55;
 
         for (let i = 0; i < dataA.length; i += 4) {
             const rDiff = Math.abs(dataA[i] - dataB[i]);
@@ -195,9 +293,15 @@ class ImageCompare {
         const width = this.canvasOverlay.width;
         const height = this.canvasOverlay.height;
 
+        ctx.save();
         ctx.clearRect(0, 0, width, height);
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, width, height);
+
+        // Apply zoom and pan transformations
+        ctx.translate(this.panX + width / 2, this.panY + height / 2);
+        ctx.scale(this.zoom, this.zoom);
+        ctx.translate(-width / 2, -height / 2);
 
         // Draw image A
         const xA = (width - this.imageA.width) / 2;
@@ -212,6 +316,7 @@ class ImageCompare {
         ctx.drawImage(this.imageB, xB, yB);
 
         ctx.globalAlpha = 1;
+        ctx.restore();
     }
 
     updateStats() {
@@ -243,6 +348,120 @@ class ImageCompare {
         };
 
         document.getElementById(viewMap[viewName]).classList.add('active');
+        this.updateMinimaps();
+    }
+
+    handleZoom(delta) {
+        this.zoom = Math.max(0.5, Math.min(5, this.zoom + delta));
+        this.zoomValue.textContent = Math.round(this.zoom * 100);
+        this.redrawAll();
+    }
+
+    handleWheelZoom(e) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        this.handleZoom(delta);
+    }
+
+    resetZoom() {
+        this.zoom = 1;
+        this.panX = 0;
+        this.panY = 0;
+        this.zoomValue.textContent = '100';
+        this.redrawAll();
+    }
+
+    startPan(e) {
+        if (this.zoom <= 1) return;
+        this.isPanning = true;
+        this.lastX = e.clientX;
+        this.lastY = e.clientY;
+    }
+
+    pan(e) {
+        if (!this.isPanning || this.zoom <= 1) return;
+
+        const deltaX = e.clientX - this.lastX;
+        const deltaY = e.clientY - this.lastY;
+
+        this.panX += deltaX;
+        this.panY += deltaY;
+
+        this.lastX = e.clientX;
+        this.lastY = e.clientY;
+
+        this.redrawAll();
+    }
+
+    endPan() {
+        this.isPanning = false;
+    }
+
+    redrawAll() {
+        if (!this.imageA || !this.imageB) return;
+
+        const width = Math.max(this.imageA.width, this.imageB.width);
+        const height = Math.max(this.imageA.height, this.imageB.height);
+
+        // Redraw all canvases with zoom and pan
+        this.drawImageOnCanvas(this.canvasA, this.imageA, width, height);
+        this.drawImageOnCanvas(this.canvasB, this.imageB, width, height);
+        this.renderOverlay(this.opacitySlider.value / 100);
+
+        if (this.diffData) {
+            this.calculateDifferences(width, height);
+        }
+
+        this.updateMinimaps();
+    }
+
+    updateMinimaps() {
+        if (!this.imageA || !this.imageB) return;
+
+        const minimaps = [
+            { canvas: this.minimapA, source: this.canvasA },
+            { canvas: this.minimapB, source: this.canvasB },
+            { canvas: this.minimapOverlay, source: this.canvasOverlay },
+            { canvas: this.minimapDiff, source: this.canvasDiff }
+        ];
+
+        minimaps.forEach(({ canvas, source }) => {
+            if (this.zoom > 1) {
+                canvas.classList.add('active');
+                this.drawMinimap(canvas, source);
+            } else {
+                canvas.classList.remove('active');
+            }
+        });
+    }
+
+    drawMinimap(minimap, sourceCanvas) {
+        const maxSize = 150;
+        const aspect = sourceCanvas.width / sourceCanvas.height;
+
+        if (aspect > 1) {
+            minimap.width = maxSize;
+            minimap.height = maxSize / aspect;
+        } else {
+            minimap.height = maxSize;
+            minimap.width = maxSize * aspect;
+        }
+
+        const ctx = minimap.getContext('2d');
+        ctx.clearRect(0, 0, minimap.width, minimap.height);
+        ctx.drawImage(sourceCanvas, 0, 0, minimap.width, minimap.height);
+
+        // Draw viewport indicator
+        const viewportWidth = minimap.width / this.zoom;
+        const viewportHeight = minimap.height / this.zoom;
+        const viewportX = -this.panX / (sourceCanvas.width * this.zoom) * minimap.width;
+        const viewportY = -this.panY / (sourceCanvas.height * this.zoom) * minimap.height;
+
+        ctx.strokeStyle = '#ff4444';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(viewportX, viewportY, viewportWidth, viewportHeight);
+        ctx.fillStyle = 'rgba(255, 68, 68, 0.2)';
+        ctx.fillRect(viewportX, viewportY, viewportWidth, viewportHeight);
     }
 
     reset() {
@@ -250,6 +469,12 @@ class ImageCompare {
         this.imageA = null;
         this.imageB = null;
         this.diffData = null;
+
+        // Reset zoom and pan
+        this.zoom = 1;
+        this.panX = 0;
+        this.panY = 0;
+        this.zoomValue.textContent = '100';
 
         // Clear file inputs
         this.inputA.value = '';
@@ -267,6 +492,11 @@ class ImageCompare {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         });
 
+        // Hide minimaps
+        [this.minimapA, this.minimapB, this.minimapOverlay, this.minimapDiff].forEach(minimap => {
+            minimap.classList.remove('active');
+        });
+
         // Hide results
         this.resultsSection.classList.remove('active');
 
@@ -274,9 +504,9 @@ class ImageCompare {
         this.compareBtn.disabled = true;
 
         // Reset sliders
-        this.sensitivitySlider.value = 30;
-        this.sensitivityValue.textContent = '30';
-        this.sensitivity = 30;
+        this.sensitivitySlider.value = 70;
+        this.sensitivityValue.textContent = '70';
+        this.sensitivity = 70;
         this.opacitySlider.value = 50;
         this.opacityValue.textContent = '50';
     }
