@@ -28,8 +28,11 @@
 
                     <div id="preview-container" class="preview-container hidden">
                         <img id="preview-image" alt="Vorschau">
-                        <button id="change-image-btn" class="btn btn-secondary">Anderes Bild wählen</button>
-                        <button id="continue-btn" class="btn btn-primary">Weiter</button>
+                        <div class="preview-buttons">
+                            <button id="change-image-btn" class="btn btn-secondary">Anderes Bild wählen</button>
+                            <button id="random-image-btn" class="btn btn-secondary">Zufallsbild wählen</button>
+                            <button id="continue-btn" class="btn btn-primary">Weiter</button>
+                        </div>
                     </div>
                 </div>
 
@@ -132,6 +135,10 @@
                         <label class="option-item">
                             <input type="checkbox" id="option-sound" checked>
                             <span>Sound-Effekte</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="checkbox" id="option-ghost-snap" checked>
+                            <span>Ghost-Position Snapping</span>
                         </label>
                     </div>
                 </div>
@@ -265,6 +272,12 @@
                         <label>
                             <input type="checkbox" id="modal-sound" checked>
                             Sound-Effekte
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="modal-ghost-snap" checked>
+                            Ghost-Position Snapping
                         </label>
                     </div>
                 </div>
