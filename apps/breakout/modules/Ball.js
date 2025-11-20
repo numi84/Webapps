@@ -38,7 +38,7 @@ export class Ball {
     }
 
     update(deltaTime, canvasWidth, canvasHeight) {
-        if (!this.active) return;
+        if (!this.active) return { lost: false, wallBounce: false };
 
         // Store trail
         this.trail.push({ x: this.x, y: this.y });
@@ -50,22 +50,30 @@ export class Ball {
         this.x += this.dx;
         this.y += this.dy;
 
+        let wallBounce = false;
+
         // Wall collisions (left, right, top)
         if (this.x - this.radius <= 0) {
             this.x = this.radius;
             this.dx = Math.abs(this.dx);
+            wallBounce = true;
         } else if (this.x + this.radius >= canvasWidth) {
             this.x = canvasWidth - this.radius;
             this.dx = -Math.abs(this.dx);
+            wallBounce = true;
         }
 
         if (this.y - this.radius <= 0) {
             this.y = this.radius;
             this.dy = Math.abs(this.dy);
+            wallBounce = true;
         }
 
-        // Return true if ball went below canvas (lost)
-        return this.y - this.radius > canvasHeight;
+        // Return object with lost and wallBounce status
+        return {
+            lost: this.y - this.radius > canvasHeight,
+            wallBounce: wallBounce
+        };
     }
 
     render(ctx, showTrail = true) {
@@ -96,6 +104,7 @@ export class Ball {
             ctx.shadowColor = '#757575';
             this.color = '#AAAAAA';
         } else {
+            this.color = '#FFFFFF'; // Reset to white
             ctx.shadowBlur = 10;
             ctx.shadowColor = this.color;
         }

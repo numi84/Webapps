@@ -596,9 +596,14 @@ class BreakoutGame {
                 continue;
             }
 
-            const lost = ball.update(deltaTime, this.canvas.width, this.canvas.height);
+            const result = ball.update(deltaTime, this.canvas.width, this.canvas.height);
 
-            if (lost) {
+            // Play wall bounce sound
+            if (result.wallBounce) {
+                this.soundManager.playWallBounce();
+            }
+
+            if (result.lost) {
                 // Check if shield is active - bounce ball back instead of losing it
                 if (this.paddle.hasShield) {
                     ball.y = this.canvas.height - ball.radius;
@@ -615,6 +620,9 @@ class BreakoutGame {
             }
 
             if (!ball.active) continue;
+
+            // Apply magnetic force if active
+            this.applyMagneticForce(ball);
 
             // Ball-paddle collision
             this.checkBallPaddleCollision(ball);
@@ -661,7 +669,7 @@ class BreakoutGame {
             bBounds.y < pBounds.y + pBounds.height &&
             bBounds.y + bBounds.height > pBounds.y) {
 
-            if (this.paddle.isSticky || ball.isMagnetic) {
+            if (this.paddle.isSticky) {
                 ball.active = false;
                 ball.stuckToPaddle = true;
                 ball.paddleOffset = ball.x - pBounds.centerX;
@@ -681,6 +689,38 @@ class BreakoutGame {
                 ball.y = pBounds.y - ball.radius;
 
                 this.soundManager.playPaddleHit();
+            }
+        }
+    }
+
+    applyMagneticForce(ball) {
+        if (!ball.isMagnetic || !ball.active) return;
+
+        const pBounds = this.paddle.getBounds();
+        const dx = pBounds.centerX - ball.x;
+        const dy = pBounds.centerY - ball.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Only apply force if ball is within magnetic range
+        const magneticRange = 200;
+        if (distance < magneticRange && distance > 0) {
+            // Force decreases with distance (inverse square law)
+            const forceMagnitude = 0.15 * (1 - distance / magneticRange);
+
+            // Normalize direction vector
+            const dirX = dx / distance;
+            const dirY = dy / distance;
+
+            // Apply force to ball velocity
+            ball.dx += dirX * forceMagnitude;
+            ball.dy += dirY * forceMagnitude;
+
+            // Limit max speed
+            const currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+            const maxSpeed = ball.speed * 1.5;
+            if (currentSpeed > maxSpeed) {
+                ball.dx = (ball.dx / currentSpeed) * maxSpeed;
+                ball.dy = (ball.dy / currentSpeed) * maxSpeed;
             }
         }
     }
@@ -810,6 +850,40 @@ class BreakoutGame {
             }
         }
 
+            if (powerup.collected) {
+                // Update active powerup
+                const stillActive = powerup.update(deltaTime);
+                if (!stillActive) {
+                    powerup.deactivate(this);
+                    this.activePowerups.splice(this.activePowerups.indexOf(powerup), 1);
+                }
+            } else {
+                powerup.update(deltaTime);
+
+                // Check collection
+                if (powerup.checkCollision(this.paddle)) {
+                    // Check if same powerup type is already active
+                    const existingPowerup = this.activePowerups.find(p => p.type === powerup.type && p.active);
+
+                    if (existingPowerup && existingPowerup.duration > 0) {
+                        // Extend the duration of existing powerup
+                        existingPowerup.extendDuration();
+                        this.powerups.splice(i, 1);
+                    } else {
+                        // Activate new powerup
+                        powerup.activate(this);
+                        this.powerups.splice(i, 1);
+                        this.activePowerups.push(powerup);
+                    }
+
+                    this.particles.emitPowerupCollect(powerup.x, powerup.y, powerup.color);
+                    this.soundManager.playPowerupCollect();
+                    this.saveManager.updateStatistics({ powerupsCollected: 1 }, this.saveData);
+                }
+                // Remove if off screen
+                else if (powerup.y > this.canvas.height) {
+                    this.powerups.splice(i, 1);
+                }
         // Update active powerups
         for (let i = this.activePowerups.length - 1; i >= 0; i--) {
             const powerup = this.activePowerups[i];

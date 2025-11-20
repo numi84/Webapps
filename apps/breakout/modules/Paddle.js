@@ -10,6 +10,16 @@ export class Paddle {
         this.targetX = x;
         this.lastX = x;
 
+        // Size level system: -2, -1, 0 (normal), +1, +2
+        this.sizeLevel = 0;
+        this.sizeLevelMultipliers = {
+            '-2': 0.4,
+            '-1': 0.7,
+            '0': 1.0,
+            '1': 1.3,
+            '2': 1.6
+        };
+
         // Special states
         this.hasLaser = false;
         this.laserShots = 0;
@@ -106,6 +116,31 @@ export class Paddle {
 
     resetWidth() {
         this.width = this.baseWidth;
+    }
+
+    // New size level system
+    increaseSizeLevel() {
+        if (this.sizeLevel < 2) {
+            this.sizeLevel++;
+            this.updateWidthFromLevel();
+        }
+    }
+
+    decreaseSizeLevel() {
+        if (this.sizeLevel > -2) {
+            this.sizeLevel--;
+            this.updateWidthFromLevel();
+        }
+    }
+
+    updateWidthFromLevel() {
+        const multiplier = this.sizeLevelMultipliers[this.sizeLevel.toString()];
+        this.width = this.baseWidth * multiplier;
+    }
+
+    resetSizeLevel() {
+        this.sizeLevel = 0;
+        this.updateWidthFromLevel();
     }
 
     shoot() {
