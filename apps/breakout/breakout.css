@@ -676,11 +676,25 @@ body {
 .setting-item input[type="text"],
 .setting-item input[type="number"] {
     padding: 8px 15px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.6);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    color: var(--light-text);
+    color: #ffffff;
     font-size: 1rem;
+    cursor: pointer;
+}
+
+.setting-item select:hover,
+.setting-item input[type="text"]:hover,
+.setting-item input[type="number"]:hover {
+    background: rgba(0, 0, 0, 0.8);
+    border-color: var(--primary-color);
+}
+
+.setting-item select option {
+    background: var(--dark-bg);
+    color: #ffffff;
+    padding: 10px;
 }
 
 .setting-item input[type="checkbox"] {
@@ -786,12 +800,26 @@ body {
 .property-item select,
 .property-item textarea {
     padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.6);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    color: var(--light-text);
+    color: #ffffff;
     font-family: inherit;
     font-size: 1rem;
+    cursor: pointer;
+}
+
+.property-item input:hover,
+.property-item select:hover,
+.property-item textarea:hover {
+    background: rgba(0, 0, 0, 0.8);
+    border-color: var(--primary-color);
+}
+
+.property-item select option {
+    background: var(--dark-bg);
+    color: #ffffff;
+    padding: 10px;
 }
 
 .editor-main {
