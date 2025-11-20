@@ -60,9 +60,6 @@
 
         <!-- Game Screen -->
         <div id="gameScreen" class="screen">
-            <!-- Active Powerups -->
-            <div id="activePowerups" class="active-powerups"></div>
-
             <div class="game-container">
                 <!-- HUD -->
                 <div class="hud">
@@ -392,6 +389,9 @@
         <!-- Background Canvas (behind everything) -->
         <canvas id="backgroundCanvas" class="background-canvas"></canvas>
     </div>
+
+    <!-- Active Powerups (outside game-wrapper to avoid overflow issues) -->
+    <div id="activePowerups" class="active-powerups"></div>
 
     <!-- Load modules -->
     <script type="module" src="breakout.js"></script>

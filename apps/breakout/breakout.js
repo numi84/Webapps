@@ -793,30 +793,30 @@ class BreakoutGame {
         // Update falling powerups
         for (let i = this.powerups.length - 1; i >= 0; i--) {
             const powerup = this.powerups[i];
+            powerup.update(deltaTime);
 
-            if (powerup.collected) {
-                // Update active powerup
-                const stillActive = powerup.update(deltaTime);
-                if (!stillActive) {
-                    powerup.deactivate(this);
-                    this.activePowerups.splice(this.activePowerups.indexOf(powerup), 1);
-                }
-            } else {
-                powerup.update(deltaTime);
+            // Check collection
+            if (powerup.checkCollision(this.paddle)) {
+                powerup.activate(this);
+                this.powerups.splice(i, 1);
+                this.activePowerups.push(powerup);
+                this.particles.emitPowerupCollect(powerup.x, powerup.y, powerup.color);
+                this.soundManager.playPowerupCollect();
+                this.saveManager.updateStatistics({ powerupsCollected: 1 }, this.saveData);
+            }
+            // Remove if off screen
+            else if (powerup.y > this.canvas.height) {
+                this.powerups.splice(i, 1);
+            }
+        }
 
-                // Check collection
-                if (powerup.checkCollision(this.paddle)) {
-                    powerup.activate(this);
-                    this.powerups.splice(i, 1);
-                    this.activePowerups.push(powerup);
-                    this.particles.emitPowerupCollect(powerup.x, powerup.y, powerup.color);
-                    this.soundManager.playPowerupCollect();
-                    this.saveManager.updateStatistics({ powerupsCollected: 1 }, this.saveData);
-                }
-                // Remove if off screen
-                else if (powerup.y > this.canvas.height) {
-                    this.powerups.splice(i, 1);
-                }
+        // Update active powerups
+        for (let i = this.activePowerups.length - 1; i >= 0; i--) {
+            const powerup = this.activePowerups[i];
+            const stillActive = powerup.update(deltaTime);
+            if (!stillActive) {
+                powerup.deactivate(this);
+                this.activePowerups.splice(i, 1);
             }
         }
 
@@ -908,10 +908,13 @@ class BreakoutGame {
                 const index = this.activePowerups.indexOf(shieldPowerup);
                 this.activePowerups.splice(index, 1);
             }
-        } else {
-            this.lives--;
-            this.soundManager.playLoseLife();
+            // Shield absorbed the hit, no need to reset ball
+            this.updateHUD();
+            return;
         }
+
+        this.lives--;
+        this.soundManager.playLoseLife();
 
         if (this.lives <= 0) {
             this.gameOver();
