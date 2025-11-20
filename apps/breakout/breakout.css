@@ -60,6 +60,7 @@ body {
     padding: 20px;
     opacity: 0;
     transition: opacity 0.3s ease;
+    z-index: 1;
 }
 
 .screen.active {
@@ -403,12 +404,12 @@ body {
 /* Active Powerups */
 .active-powerups {
     position: fixed;
-    top: 140px;
+    top: 200px;
     right: 20px;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    z-index: 99;
+    z-index: 101;
     pointer-events: none;
     max-width: 200px;
 }
@@ -422,7 +423,9 @@ body {
     display: flex;
     flex-direction: column;
     gap: 5px;
-    animation: powerupSlideIn 0.3s ease;
+    animation: powerupSlideIn 0.3s ease forwards;
+    opacity: 1 !important;
+    transform: translateX(0) !important;
 }
 
 @keyframes powerupSlideIn {
