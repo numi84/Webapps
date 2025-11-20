@@ -80,7 +80,7 @@ export const PowerupConfig = {
         attractionForce: 0.3
     },
     [PowerupType.SHIELD]: {
-        duration: -1,
+        duration: 30000,
         color: '#00E5FF',
         icon: '🛡',
         name: 'Schutzschild'
@@ -219,7 +219,6 @@ export class Powerup {
 
             case PowerupType.SHIELD:
                 game.paddle.hasShield = true;
-                this.active = true; // Will be deactivated when used
                 break;
         }
     }
