@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Deluxe - Neon Edition</title>
+    <link rel="stylesheet" href="snake-deluxe.css">
+</head>
+<body>
+    <div class="stars"></div>
+    <div class="container">
+        <header>
+            <a href="../../index.html" class="back-button">← Zurück zum Hub</a>
+            <h1 class="neon-title">🐍 SNAKE DELUXE 🐍</h1>
+            <p class="subtitle">Neon Edition</p>
+        </header>
+
+        <div class="game-container">
+            <div class="info-bar">
+                <div class="info-item">
+                    <span class="label">Punkte</span>
+                    <span id="score" class="value">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Level</span>
+                    <span id="level" class="value">1</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Highscore</span>
+                    <span id="highscore" class="value">0</span>
+                </div>
+            </div>
+
+            <div class="canvas-wrapper">
+                <canvas id="game-canvas"></canvas>
+                <canvas id="particle-canvas"></canvas>
+            </div>
+
+            <div class="controls">
+                <div class="difficulty-selector">
+                    <button class="diff-btn active" data-speed="150">🐢 Langsam</button>
+                    <button class="diff-btn" data-speed="100">🏃 Mittel</button>
+                    <button class="diff-btn" data-speed="70">⚡ Schnell</button>
+                    <button class="diff-btn" data-speed="50">🚀 Extrem</button>
+                </div>
+
+                <button id="start-btn" class="start-btn">
+                    <span class="btn-text">NEUES SPIEL STARTEN</span>
+                </button>
+
+                <div class="mobile-controls">
+                    <div class="arrow-row">
+                        <button class="arrow-btn" data-direction="up">
+                            <span>↑</span>
+                        </button>
+                    </div>
+                    <div class="arrow-row">
+                        <button class="arrow-btn" data-direction="left">
+                            <span>←</span>
+                        </button>
+                        <button class="arrow-btn" data-direction="down">
+                            <span>↓</span>
+                        </button>
+                        <button class="arrow-btn" data-direction="right">
+                            <span>→</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="instructions">
+                <p><strong>⌨️ Steuerung:</strong> Pfeiltasten oder Buttons</p>
+                <p><strong>🎯 Ziel:</strong> Sammle leuchtende Orbs und werde länger!</p>
+                <p><strong>✨ Features:</strong> Neon-Effekte • Partikel • Smooth Animations</p>
+            </div>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-label">Beste Serie</div>
+                <div id="best-streak" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🎮</div>
+                <div class="stat-label">Spiele gespielt</div>
+                <div id="games-played" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-label">Orbs gesamt</div>
+                <div id="total-orbs" class="stat-value">0</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="snake-deluxe.js"></script>
+</body>
+</html>
