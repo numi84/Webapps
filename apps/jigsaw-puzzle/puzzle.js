@@ -45,7 +45,8 @@ let gameState = {
         showPreview: true,
         highlightEdges: true,
         soundEnabled: true,
-        ghostOpacity: 0.2
+        ghostOpacity: 0.2,
+        ghostSnap: true
     },
     pieces: [],
     groups: [],
@@ -623,6 +624,9 @@ class DragController {
     }
 
     checkGhostSnap(piece) {
+        // Skip if ghost snapping is disabled
+        if (!gameState.settings.ghostSnap) return;
+
         // Check if piece is close to its correct position
         const tolerance = SNAP_DISTANCE;
         const dx = Math.abs(piece.x - piece.gridX);
@@ -914,6 +918,12 @@ class PuzzleGame {
             gameState.image = null;
         });
 
+        document.getElementById('random-image-btn').addEventListener('click', () => {
+            const randomUrl = EXAMPLE_IMAGES[Math.floor(Math.random() * EXAMPLE_IMAGES.length)];
+            this.loadImageURL(randomUrl);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
         document.getElementById('continue-btn').addEventListener('click', () => {
             if (gameState.image) {
                 this.showScreen('settings');
@@ -932,7 +942,11 @@ class PuzzleGame {
             const div = document.createElement('div');
             div.className = 'example-image';
             div.innerHTML = `<img src="${url}" alt="Beispiel ${index + 1}">`;
-            div.addEventListener('click', () => this.loadImageURL(url));
+            div.addEventListener('click', () => {
+                this.loadImageURL(url);
+                // Scroll to top of page
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
             grid.appendChild(div);
         });
     }
@@ -1081,6 +1095,9 @@ class PuzzleGame {
         document.getElementById('option-sound').addEventListener('change', (e) => {
             gameState.settings.soundEnabled = e.target.checked;
         });
+        document.getElementById('option-ghost-snap').addEventListener('change', (e) => {
+            gameState.settings.ghostSnap = e.target.checked;
+        });
 
         // Navigation
         document.getElementById('back-to-upload-btn').addEventListener('click', () => {
@@ -1181,6 +1198,7 @@ class PuzzleGame {
             gameState.settings.showPreview = document.getElementById('modal-preview').checked;
             gameState.settings.highlightEdges = document.getElementById('modal-edges').checked;
             gameState.settings.soundEnabled = document.getElementById('modal-sound').checked;
+            gameState.settings.ghostSnap = document.getElementById('modal-ghost-snap').checked;
 
             // Update UI
             document.getElementById('preview-window').classList.toggle('hidden',
