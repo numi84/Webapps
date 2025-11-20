@@ -175,11 +175,11 @@ export class Powerup {
                 break;
 
             case PowerupType.WIDE_PADDLE:
-                game.paddle.setWidth(2.0);
+                game.paddle.increaseSizeLevel();
                 break;
 
             case PowerupType.NARROW_PADDLE:
-                game.paddle.setWidth(0.5);
+                game.paddle.decreaseSizeLevel();
                 game.scoreMultiplier *= config.pointsMultiplier;
                 break;
 
@@ -229,9 +229,12 @@ export class Powerup {
 
         switch (this.type) {
             case PowerupType.WIDE_PADDLE:
+                game.paddle.decreaseSizeLevel();
+                break;
+
             case PowerupType.NARROW_PADDLE:
-                game.paddle.resetWidth();
-                if (this.type === PowerupType.NARROW_PADDLE) {
+                game.paddle.increaseSizeLevel();
+                if (config.pointsMultiplier) {
                     game.scoreMultiplier /= config.pointsMultiplier;
                 }
                 break;
@@ -295,6 +298,13 @@ export class Powerup {
     getTimeRemainingPercent() {
         if (this.duration <= 0) return 100;
         return (this.timeRemaining / this.duration) * 100;
+    }
+
+    extendDuration() {
+        // Add full duration to remaining time
+        if (this.duration > 0) {
+            this.timeRemaining += this.duration;
+        }
     }
 }
 
