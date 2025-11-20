@@ -76,7 +76,8 @@ class Particle {
         ctx.save();
         ctx.globalAlpha = this.life;
         ctx.fillStyle = this.color;
-        ctx.shadowBlur = 20;
+        // Reduced shadowBlur for better performance
+        ctx.shadowBlur = 10;
         ctx.shadowColor = this.color;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
@@ -227,11 +228,9 @@ function draw() {
     ctx.fillStyle = 'rgba(10, 10, 26, 0.3)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw grid with glow
-    ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
+    // Draw simplified grid (no shadow for better performance)
+    ctx.strokeStyle = 'rgba(0, 255, 255, 0.08)';
     ctx.lineWidth = 1;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = 'rgba(0, 255, 255, 0.3)';
 
     for (let i = 0; i <= tileCount; i++) {
         ctx.beginPath();
@@ -244,14 +243,11 @@ function draw() {
         ctx.lineTo(canvas.width, i * gridSize);
         ctx.stroke();
     }
-    ctx.shadowBlur = 0;
 
-    // Draw trail
+    // Draw trail (no shadow for better performance)
     trail.forEach((t, index) => {
         const alpha = t.life;
-        ctx.fillStyle = `rgba(${colors.trail.r}, ${colors.trail.g}, ${colors.trail.b}, ${alpha * 0.3})`;
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = `rgba(${colors.trail.r}, ${colors.trail.g}, ${colors.trail.b}, ${alpha})`;
+        ctx.fillStyle = `rgba(${colors.trail.r}, ${colors.trail.g}, ${colors.trail.b}, ${alpha * 0.4})`;
         ctx.beginPath();
         ctx.arc(t.x, t.y, t.size, 0, Math.PI * 2);
         ctx.fill();
@@ -263,48 +259,33 @@ function draw() {
         return t.life > 0;
     });
 
-    // Draw food with pulsating glow
+    // Limit trail array size for performance
+    if (trail.length > 50) {
+        trail = trail.slice(-50);
+    }
+
+    // Draw food with pulsating glow (optimized)
     const foodPulse = Math.sin(Date.now() * 0.005) * 0.3 + 0.7;
     const foodSize = (gridSize / 2 - 2) * (1 + foodPulse * 0.2);
+    const foodX = food.x * gridSize + gridSize / 2;
+    const foodY = food.y * gridSize + gridSize / 2;
 
     ctx.save();
-    ctx.shadowBlur = 30 * foodPulse;
+    // Reduced shadowBlur for better performance
+    ctx.shadowBlur = 20 * foodPulse;
     ctx.shadowColor = `rgb(${colors.food.r}, ${colors.food.g}, ${colors.food.b})`;
 
-    // Outer glow
-    const gradient = ctx.createRadialGradient(
-        food.x * gridSize + gridSize / 2,
-        food.y * gridSize + gridSize / 2,
-        0,
-        food.x * gridSize + gridSize / 2,
-        food.y * gridSize + gridSize / 2,
-        foodSize + 10
-    );
-    gradient.addColorStop(0, `rgba(${colors.food.r}, ${colors.food.g}, ${colors.food.b}, 1)`);
-    gradient.addColorStop(0.5, `rgba(${colors.food.r}, ${colors.food.g}, ${colors.food.b}, 0.5)`);
-    gradient.addColorStop(1, `rgba(${colors.food.r}, ${colors.food.g}, ${colors.food.b}, 0)`);
-
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(
-        food.x * gridSize + gridSize / 2,
-        food.y * gridSize + gridSize / 2,
-        foodSize + 10,
-        0,
-        Math.PI * 2
-    );
-    ctx.fill();
-
-    // Inner food
+    // Simplified glow - single layer
     ctx.fillStyle = `rgb(${colors.food.r}, ${colors.food.g}, ${colors.food.b})`;
     ctx.beginPath();
-    ctx.arc(
-        food.x * gridSize + gridSize / 2,
-        food.y * gridSize + gridSize / 2,
-        foodSize,
-        0,
-        Math.PI * 2
-    );
+    ctx.arc(foodX, foodY, foodSize, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Highlight
+    ctx.globalAlpha = 0.6;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.beginPath();
+    ctx.arc(foodX - foodSize * 0.25, foodY - foodSize * 0.25, foodSize * 0.3, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 
@@ -325,8 +306,8 @@ function draw() {
             drawX = prevX + (targetX - prevX) * interpolation;
             drawY = prevY + (targetY - prevY) * interpolation;
 
-            // Add trail for head
-            if (Math.random() < 0.3) {
+            // Add trail for head (reduced frequency for performance)
+            if (Math.random() < 0.15) {
                 trail.push({
                     x: drawX + gridSize / 2,
                     y: drawY + gridSize / 2,
@@ -342,24 +323,17 @@ function draw() {
         const g = Math.floor(colors.snakeHead.g + (colors.snakeBody.g - colors.snakeHead.g) * ratio);
         const b = Math.floor(colors.snakeHead.b + (colors.snakeBody.b - colors.snakeHead.b) * ratio);
 
-        // Draw segment with glow
+        // Draw segment with optimized glow
         ctx.save();
-        ctx.shadowBlur = index === 0 ? 30 : 20;
-        ctx.shadowColor = `rgb(${r}, ${g}, ${b})`;
 
-        // Gradient fill
-        const segmentGradient = ctx.createRadialGradient(
-            drawX + gridSize / 2,
-            drawY + gridSize / 2,
-            0,
-            drawX + gridSize / 2,
-            drawY + gridSize / 2,
-            gridSize / 2
-        );
-        segmentGradient.addColorStop(0, `rgb(${r}, ${g}, ${b})`);
-        segmentGradient.addColorStop(1, `rgb(${Math.floor(r * 0.7)}, ${Math.floor(g * 0.7)}, ${Math.floor(b * 0.7)})`);
+        // Only add shadow to head for better performance
+        if (index === 0) {
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = `rgb(${r}, ${g}, ${b})`;
+        }
 
-        ctx.fillStyle = segmentGradient;
+        // Solid color fill (no gradient for better performance)
+        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
         ctx.fillRect(
             drawX + 2,
             drawY + 2,
@@ -367,46 +341,50 @@ function draw() {
             gridSize - 4
         );
 
-        // Add extra glow for head
-        if (index === 0) {
-            ctx.shadowBlur = 50;
-            ctx.globalAlpha = 0.5;
-            ctx.fillRect(
-                drawX + 4,
-                drawY + 4,
-                gridSize - 8,
-                gridSize - 8
-            );
-        }
+        // Add highlight for depth
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.2 - index * 0.01})`;
+        ctx.fillRect(
+            drawX + 3,
+            drawY + 3,
+            gridSize * 0.4,
+            gridSize * 0.4
+        );
 
         ctx.restore();
     });
 }
 
-// Draw Particles
+// Draw Particles (optimized)
 function drawParticles() {
     particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
 
-    particles.forEach((particle, index) => {
+    // Update and filter in one pass for better performance
+    particles = particles.filter(particle => {
         particle.update();
-        particle.draw(particleCtx);
-
-        if (particle.life <= 0) {
-            particles.splice(index, 1);
+        if (particle.life > 0) {
+            particle.draw(particleCtx);
+            return true;
         }
+        return false;
     });
+
+    // Limit total particles for consistent performance
+    if (particles.length > 100) {
+        particles = particles.slice(-100);
+    }
 }
 
-// Create Food Particles
+// Create Food Particles (optimized count)
 function createFoodParticles(x, y) {
-    const particleCount = 30;
+    // Reduced particle count for better performance
+    const particleCount = 15;
     for (let i = 0; i < particleCount; i++) {
         const color = `rgb(${colors.food.r}, ${colors.food.g}, ${colors.food.b})`;
         particles.push(new Particle(x, y, color));
     }
 
     // Add some cyan particles too
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 8; i++) {
         const color = `rgb(0, 255, 255)`;
         particles.push(new Particle(x, y, color));
     }
