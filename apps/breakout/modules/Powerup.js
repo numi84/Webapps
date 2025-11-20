@@ -228,11 +228,19 @@ export class Powerup {
 
         switch (this.type) {
             case PowerupType.WIDE_PADDLE:
-                game.paddle.decreaseSizeLevel();
+                // Only decrease if paddle is larger than normal (size > 0)
+                // This prevents paddle from becoming too small when multiple powerups expire
+                if (game.paddle.sizeLevel > 0) {
+                    game.paddle.decreaseSizeLevel();
+                }
                 break;
 
             case PowerupType.NARROW_PADDLE:
-                game.paddle.increaseSizeLevel();
+                // Only increase if paddle is smaller than normal (size < 0)
+                // This prevents paddle from becoming too large when multiple powerups expire
+                if (game.paddle.sizeLevel < 0) {
+                    game.paddle.increaseSizeLevel();
+                }
                 if (config.pointsMultiplier) {
                     game.scoreMultiplier /= config.pointsMultiplier;
                 }

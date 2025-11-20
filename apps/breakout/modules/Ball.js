@@ -69,6 +69,11 @@ export class Ball {
             wallBounce = true;
         }
 
+        // After wall bounce, ensure ball doesn't get stuck in shallow angles
+        if (wallBounce) {
+            this.ensureMinimumAngle();
+        }
+
         // Return object with lost and wallBounce status
         return {
             lost: this.y - this.radius > canvasHeight,
@@ -128,6 +133,26 @@ export class Ball {
     setVelocity(dx, dy) {
         this.dx = dx;
         this.dy = dy;
+    }
+
+    // Prevent shallow angles that cause hundreds of wall bounces
+    ensureMinimumAngle() {
+        // Minimum vertical velocity to prevent too-flat angles
+        const minVerticalSpeed = this.speed * 0.3; // At least 30% of speed must be vertical
+
+        if (Math.abs(this.dy) < minVerticalSpeed) {
+            // Ball is moving too horizontally, add minimum vertical component
+            const sign = this.dy >= 0 ? 1 : -1;
+            this.dy = sign * minVerticalSpeed;
+
+            // Adjust dx to maintain overall speed
+            const currentSpeed = Math.sqrt(this.dx * this.dx + this.dy * this.dy);
+            if (currentSpeed > 0) {
+                const scale = this.speed / currentSpeed;
+                this.dx *= scale;
+                this.dy *= scale;
+            }
+        }
     }
 
     setSpeed(speed) {

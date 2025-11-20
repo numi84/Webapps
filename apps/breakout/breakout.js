@@ -688,6 +688,9 @@ class BreakoutGame {
                 ball.dy = -Math.abs(Math.cos(angle) * ball.speed);
                 ball.y = pBounds.y - ball.radius;
 
+                // Ensure minimum angle to prevent shallow bounces
+                ball.ensureMinimumAngle();
+
                 this.soundManager.playPaddleHit();
             }
         }
