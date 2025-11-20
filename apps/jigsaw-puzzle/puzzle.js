@@ -17,7 +17,19 @@ const EXAMPLE_IMAGES = [
     'https://picsum.photos/seed/puzzle1/800/600',
     'https://picsum.photos/seed/puzzle2/800/600',
     'https://picsum.photos/seed/puzzle3/800/600',
-    'https://picsum.photos/seed/puzzle4/800/600'
+    'https://picsum.photos/seed/puzzle4/800/600',
+    'https://picsum.photos/seed/puzzle5/800/600',
+    'https://picsum.photos/seed/puzzle6/800/600',
+    'https://picsum.photos/seed/puzzle7/800/600',
+    'https://picsum.photos/seed/puzzle8/800/600',
+    'https://picsum.photos/seed/puzzle9/800/600',
+    'https://picsum.photos/seed/puzzle10/800/600',
+    'https://picsum.photos/seed/puzzle11/800/600',
+    'https://picsum.photos/seed/puzzle12/800/600',
+    'https://picsum.photos/seed/puzzle13/800/600',
+    'https://picsum.photos/seed/puzzle14/800/600',
+    'https://picsum.photos/seed/puzzle15/800/600',
+    'https://picsum.photos/seed/puzzle16/800/600'
 ];
 
 // Game State
@@ -595,6 +607,10 @@ class DragController {
             this.draggedGroup.pieces : [this.draggedPiece];
 
         movedPieces.forEach(piece => {
+            // First check if piece can snap to its correct ghost position
+            this.checkGhostSnap(piece);
+
+            // Then check snapping to other pieces
             this.pieces.forEach(other => {
                 if (piece === other) return;
                 if (piece.group && piece.group === other.group) return;
@@ -604,6 +620,32 @@ class DragController {
                 }
             });
         });
+    }
+
+    checkGhostSnap(piece) {
+        // Check if piece is close to its correct position
+        const tolerance = SNAP_DISTANCE;
+        const dx = Math.abs(piece.x - piece.gridX);
+        const dy = Math.abs(piece.y - piece.gridY);
+
+        if (dx < tolerance && dy < tolerance) {
+            // Snap to correct position
+            if (piece.group) {
+                const offsetX = piece.gridX - piece.x;
+                const offsetY = piece.gridY - piece.y;
+                piece.group.moveBy(offsetX, offsetY);
+            } else {
+                piece.moveTo(piece.gridX, piece.gridY);
+            }
+
+            // Play sound
+            if (gameState.settings.soundEnabled) {
+                this.playSnapSound();
+            }
+
+            // Check placement
+            this.checkPlacement();
+        }
     }
 
     snapPieces(piece1, piece2) {
@@ -931,6 +973,55 @@ class PuzzleGame {
         const previewContainer = document.getElementById('preview-container');
         previewContainer.classList.remove('hidden');
         document.getElementById('preview-image').src = img.src;
+
+        // Update difficulty previews based on image orientation
+        this.updateDifficultyPreviews();
+    }
+
+    updateDifficultyPreviews() {
+        if (!gameState.image) return;
+
+        const isPortrait = gameState.image.height > gameState.image.width;
+
+        // Update each difficulty preview
+        document.querySelectorAll('.difficulty-card').forEach(card => {
+            const difficultyKey = card.dataset.difficulty;
+            const difficulty = DIFFICULTIES[difficultyKey];
+
+            if (difficulty) {
+                let rows = difficulty.rows;
+                let cols = difficulty.cols;
+
+                // Swap rows and cols based on image orientation
+                if (isPortrait && rows < cols) {
+                    [rows, cols] = [cols, rows];
+                } else if (!isPortrait && rows > cols) {
+                    [rows, cols] = [cols, rows];
+                }
+
+                // Update the preview grid
+                const previewGrid = card.querySelector('.preview-grid');
+                if (previewGrid) {
+                    previewGrid.style.setProperty('--rows', rows);
+                    previewGrid.style.setProperty('--cols', cols);
+
+                    // Update dimensions based on orientation
+                    if (isPortrait) {
+                        previewGrid.style.width = '60px';
+                        previewGrid.style.height = '80px';
+                    } else {
+                        previewGrid.style.width = '80px';
+                        previewGrid.style.height = '60px';
+                    }
+                }
+
+                // Update the piece count text
+                const pieceCount = card.querySelector('p');
+                if (pieceCount) {
+                    pieceCount.textContent = `${rows}×${cols} = ${rows * cols} Teile`;
+                }
+            }
+        });
     }
 
     setupSettingsScreen() {
@@ -1198,19 +1289,18 @@ class PuzzleGame {
         const canvasHeight = this.canvas.height;
         const margin = 20;
         const ghostArea = gameState.ghostArea;
+        const placedPieces = [];
 
         gameState.pieces.forEach(piece => {
             let x, y;
             let attempts = 0;
+            let validPosition = false;
 
-            // Try to place pieces outside ghost area
-            do {
+            // Try to find a non-overlapping position
+            while (!validPosition && attempts < 100) {
                 x = margin + Math.random() * (canvasWidth - piece.width - margin * 2);
                 y = margin + Math.random() * (canvasHeight - piece.height - margin * 2);
                 attempts++;
-
-                // After 50 attempts, allow placement anywhere
-                if (attempts > 50) break;
 
                 // Check if piece overlaps with ghost area center
                 const pieceCenter = { x: x + piece.width / 2, y: y + piece.height / 2 };
@@ -1219,20 +1309,36 @@ class PuzzleGame {
                     y: ghostArea.y + ghostArea.height / 2
                 };
 
-                // Keep pieces away from the center of ghost area
-                const distance = Math.sqrt(
+                const distanceToGhost = Math.sqrt(
                     Math.pow(pieceCenter.x - ghostCenter.x, 2) +
                     Math.pow(pieceCenter.y - ghostCenter.y, 2)
                 );
 
-                // Accept if piece is far enough from ghost center
-                if (distance > Math.min(ghostArea.width, ghostArea.height) * 0.4) {
-                    break;
+                // Check if far enough from ghost center
+                if (distanceToGhost < Math.min(ghostArea.width, ghostArea.height) * 0.4) {
+                    continue;
                 }
-            } while (attempts < 50);
+
+                // Check for overlaps with already placed pieces
+                let hasOverlap = false;
+                for (const placed of placedPieces) {
+                    const overlapX = x < placed.x + placed.width + 10 && x + piece.width + 10 > placed.x;
+                    const overlapY = y < placed.y + placed.height + 10 && y + piece.height + 10 > placed.y;
+
+                    if (overlapX && overlapY) {
+                        hasOverlap = true;
+                        break;
+                    }
+                }
+
+                if (!hasOverlap) {
+                    validPosition = true;
+                }
+            }
 
             piece.x = x;
             piece.y = y;
+            placedPieces.push({ x, y, width: piece.width, height: piece.height });
         });
     }
 
