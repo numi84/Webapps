@@ -17,7 +17,19 @@ const EXAMPLE_IMAGES = [
     'https://picsum.photos/seed/puzzle1/800/600',
     'https://picsum.photos/seed/puzzle2/800/600',
     'https://picsum.photos/seed/puzzle3/800/600',
-    'https://picsum.photos/seed/puzzle4/800/600'
+    'https://picsum.photos/seed/puzzle4/800/600',
+    'https://picsum.photos/seed/puzzle5/800/600',
+    'https://picsum.photos/seed/puzzle6/800/600',
+    'https://picsum.photos/seed/puzzle7/800/600',
+    'https://picsum.photos/seed/puzzle8/800/600',
+    'https://picsum.photos/seed/puzzle9/800/600',
+    'https://picsum.photos/seed/puzzle10/800/600',
+    'https://picsum.photos/seed/puzzle11/800/600',
+    'https://picsum.photos/seed/puzzle12/800/600',
+    'https://picsum.photos/seed/puzzle13/800/600',
+    'https://picsum.photos/seed/puzzle14/800/600',
+    'https://picsum.photos/seed/puzzle15/800/600',
+    'https://picsum.photos/seed/puzzle16/800/600'
 ];
 
 // Game State
@@ -931,6 +943,55 @@ class PuzzleGame {
         const previewContainer = document.getElementById('preview-container');
         previewContainer.classList.remove('hidden');
         document.getElementById('preview-image').src = img.src;
+
+        // Update difficulty previews based on image orientation
+        this.updateDifficultyPreviews();
+    }
+
+    updateDifficultyPreviews() {
+        if (!gameState.image) return;
+
+        const isPortrait = gameState.image.height > gameState.image.width;
+
+        // Update each difficulty preview
+        document.querySelectorAll('.difficulty-card').forEach(card => {
+            const difficultyKey = card.dataset.difficulty;
+            const difficulty = DIFFICULTIES[difficultyKey];
+
+            if (difficulty) {
+                let rows = difficulty.rows;
+                let cols = difficulty.cols;
+
+                // Swap rows and cols based on image orientation
+                if (isPortrait && rows < cols) {
+                    [rows, cols] = [cols, rows];
+                } else if (!isPortrait && rows > cols) {
+                    [rows, cols] = [cols, rows];
+                }
+
+                // Update the preview grid
+                const previewGrid = card.querySelector('.preview-grid');
+                if (previewGrid) {
+                    previewGrid.style.setProperty('--rows', rows);
+                    previewGrid.style.setProperty('--cols', cols);
+
+                    // Update dimensions based on orientation
+                    if (isPortrait) {
+                        previewGrid.style.width = '60px';
+                        previewGrid.style.height = '80px';
+                    } else {
+                        previewGrid.style.width = '80px';
+                        previewGrid.style.height = '60px';
+                    }
+                }
+
+                // Update the piece count text
+                const pieceCount = card.querySelector('p');
+                if (pieceCount) {
+                    pieceCount.textContent = `${rows}×${cols} = ${rows * cols} Teile`;
+                }
+            }
+        });
     }
 
     setupSettingsScreen() {

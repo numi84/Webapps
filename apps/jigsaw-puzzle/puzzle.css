@@ -113,11 +113,13 @@ header p {
 .drop-zone {
     border: 3px dashed #ccc;
     border-radius: 12px;
-    padding: 60px 40px;
+    padding: 20px;
     text-align: center;
     cursor: pointer;
     transition: all 0.3s ease;
     background: #fafafa;
+    max-width: 400px;
+    margin: 0 auto;
 }
 
 .drop-zone:hover,
@@ -131,24 +133,28 @@ header p {
 }
 
 .upload-icon {
-    font-size: 64px;
-    margin-bottom: 20px;
+    font-size: 40px;
+    margin-bottom: 10px;
 }
 
 .upload-text {
-    font-size: 18px;
+    font-size: 14px;
     font-weight: 600;
     color: #333;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
 }
 
 .upload-hint {
     color: #666;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .preview-container {
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
 }
 
 .preview-container.hidden {
@@ -159,7 +165,6 @@ header p {
     max-width: 100%;
     max-height: 400px;
     border-radius: 8px;
-    margin-bottom: 20px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.1);
 }
 
@@ -208,8 +213,10 @@ header p {
 
 .example-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 20px;
+    max-width: 900px;
+    margin: 0 auto;
 }
 
 .example-image {
@@ -500,9 +507,9 @@ header p {
 
 /* Preview Window */
 .preview-window {
-    position: absolute;
-    top: 20px;
-    left: 20px;
+    position: fixed;
+    top: 80px;
+    right: 20px;
     background: white;
     border-radius: 8px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.3);
@@ -774,8 +781,8 @@ header p {
 
     .preview-window {
         width: 150px;
-        top: 10px;
-        left: 10px;
+        top: 70px;
+        right: 10px;
     }
 
     .completion-stats {
@@ -787,13 +794,19 @@ header p {
     }
 }
 
+@media (max-width: 768px) {
+    .example-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 @media (max-width: 480px) {
     .difficulty-grid {
         grid-template-columns: 1fr;
     }
 
     .example-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
