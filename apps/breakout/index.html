@@ -245,8 +245,14 @@
             </div>
             <div class="editor-container">
                 <div class="editor-sidebar">
-                    <h3>Block-Palette</h3>
+                    <h3>Layer</h3>
+                    <div class="tool-buttons">
+                        <button class="tool-btn active" data-layer="blocks">Blöcke</button>
+                        <button class="tool-btn" data-layer="powerups">Powerups</button>
+                    </div>
+                    <h3 id="paletteTitle">Block-Palette</h3>
                     <div id="blockPalette" class="block-palette"></div>
+                    <div id="powerupPalette" class="block-palette" style="display: none;"></div>
                     <h3>Werkzeuge</h3>
                     <div class="tool-buttons">
                         <button class="tool-btn active" data-tool="place">Platzieren</button>
