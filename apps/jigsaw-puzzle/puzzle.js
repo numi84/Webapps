@@ -607,6 +607,10 @@ class DragController {
             this.draggedGroup.pieces : [this.draggedPiece];
 
         movedPieces.forEach(piece => {
+            // First check if piece can snap to its correct ghost position
+            this.checkGhostSnap(piece);
+
+            // Then check snapping to other pieces
             this.pieces.forEach(other => {
                 if (piece === other) return;
                 if (piece.group && piece.group === other.group) return;
@@ -616,6 +620,32 @@ class DragController {
                 }
             });
         });
+    }
+
+    checkGhostSnap(piece) {
+        // Check if piece is close to its correct position
+        const tolerance = SNAP_DISTANCE;
+        const dx = Math.abs(piece.x - piece.gridX);
+        const dy = Math.abs(piece.y - piece.gridY);
+
+        if (dx < tolerance && dy < tolerance) {
+            // Snap to correct position
+            if (piece.group) {
+                const offsetX = piece.gridX - piece.x;
+                const offsetY = piece.gridY - piece.y;
+                piece.group.moveBy(offsetX, offsetY);
+            } else {
+                piece.moveTo(piece.gridX, piece.gridY);
+            }
+
+            // Play sound
+            if (gameState.settings.soundEnabled) {
+                this.playSnapSound();
+            }
+
+            // Check placement
+            this.checkPlacement();
+        }
     }
 
     snapPieces(piece1, piece2) {
@@ -1259,19 +1289,18 @@ class PuzzleGame {
         const canvasHeight = this.canvas.height;
         const margin = 20;
         const ghostArea = gameState.ghostArea;
+        const placedPieces = [];
 
         gameState.pieces.forEach(piece => {
             let x, y;
             let attempts = 0;
+            let validPosition = false;
 
-            // Try to place pieces outside ghost area
-            do {
+            // Try to find a non-overlapping position
+            while (!validPosition && attempts < 100) {
                 x = margin + Math.random() * (canvasWidth - piece.width - margin * 2);
                 y = margin + Math.random() * (canvasHeight - piece.height - margin * 2);
                 attempts++;
-
-                // After 50 attempts, allow placement anywhere
-                if (attempts > 50) break;
 
                 // Check if piece overlaps with ghost area center
                 const pieceCenter = { x: x + piece.width / 2, y: y + piece.height / 2 };
@@ -1280,20 +1309,36 @@ class PuzzleGame {
                     y: ghostArea.y + ghostArea.height / 2
                 };
 
-                // Keep pieces away from the center of ghost area
-                const distance = Math.sqrt(
+                const distanceToGhost = Math.sqrt(
                     Math.pow(pieceCenter.x - ghostCenter.x, 2) +
                     Math.pow(pieceCenter.y - ghostCenter.y, 2)
                 );
 
-                // Accept if piece is far enough from ghost center
-                if (distance > Math.min(ghostArea.width, ghostArea.height) * 0.4) {
-                    break;
+                // Check if far enough from ghost center
+                if (distanceToGhost < Math.min(ghostArea.width, ghostArea.height) * 0.4) {
+                    continue;
                 }
-            } while (attempts < 50);
+
+                // Check for overlaps with already placed pieces
+                let hasOverlap = false;
+                for (const placed of placedPieces) {
+                    const overlapX = x < placed.x + placed.width + 10 && x + piece.width + 10 > placed.x;
+                    const overlapY = y < placed.y + placed.height + 10 && y + piece.height + 10 > placed.y;
+
+                    if (overlapX && overlapY) {
+                        hasOverlap = true;
+                        break;
+                    }
+                }
+
+                if (!hasOverlap) {
+                    validPosition = true;
+                }
+            }
 
             piece.x = x;
             piece.y = y;
+            placedPieces.push({ x, y, width: piece.width, height: piece.height });
         });
     }
 
