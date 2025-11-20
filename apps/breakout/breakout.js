@@ -60,8 +60,13 @@ class BreakoutGame {
         this.editorCanvas = document.getElementById('editorCanvas');
         this.editorCtx = this.editorCanvas ? this.editorCanvas.getContext('2d') : null;
         this.editorGrid = [];
+        this.editorPowerupGrid = [];
         this.editorSelectedBlock = BlockType.STANDARD;
+        this.editorSelectedPowerup = null;
         this.editorTool = 'place';
+        this.editorLayer = 'blocks'; // 'blocks' or 'powerups'
+        this.customLevels = [];
+        this.currentLevelTab = 'premade';
 
         // Timing
         this.lastTime = 0;
@@ -184,6 +189,16 @@ class BreakoutGame {
             btn.addEventListener('click', () => {
                 this.hideModal('gameOver');
                 this.restartLevel();
+            });
+        });
+
+        // Level tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.currentLevelTab = btn.dataset.tab;
+                this.renderLevelSelect();
             });
         });
 
@@ -353,6 +368,23 @@ class BreakoutGame {
         // Will load from JSON file in production
         // For now, we'll generate them dynamically
         this.levels = this.generateLevels();
+        this.loadCustomLevels();
+    }
+
+    loadCustomLevels() {
+        const saved = localStorage.getItem('breakout_custom_levels');
+        if (saved) {
+            try {
+                this.customLevels = JSON.parse(saved);
+            } catch (e) {
+                console.error('Failed to load custom levels:', e);
+                this.customLevels = [];
+            }
+        }
+    }
+
+    saveCustomLevels() {
+        localStorage.setItem('breakout_custom_levels', JSON.stringify(this.customLevels));
     }
 
     generateLevels() {
@@ -404,25 +436,49 @@ class BreakoutGame {
 
         grid.innerHTML = '';
 
-        this.levels.forEach(level => {
-            const isUnlocked = this.saveData.progress.unlockedLevels.includes(level.id);
-            const levelData = this.saveData.progress.levelScores[level.id] || {};
+        if (this.currentLevelTab === 'premade') {
+            // Render pre-made levels
+            this.levels.forEach(level => {
+                const isUnlocked = this.saveData.progress.unlockedLevels.includes(level.id);
+                const levelData = this.saveData.progress.levelScores[level.id] || {};
 
-            const card = document.createElement('div');
-            card.className = 'level-card' + (isUnlocked ? '' : ' locked');
+                const card = document.createElement('div');
+                card.className = 'level-card' + (isUnlocked ? '' : ' locked');
 
-            card.innerHTML = `
-                <div class="level-number">${level.id}</div>
-                <div class="level-stars">${this.renderStars(levelData.stars || 0)}</div>
-                <div class="level-highscore">${levelData.highScore || 0}</div>
-            `;
+                card.innerHTML = `
+                    <div class="level-number">${level.id}</div>
+                    <div class="level-stars">${this.renderStars(levelData.stars || 0)}</div>
+                    <div class="level-highscore">${levelData.highScore || 0}</div>
+                `;
 
-            if (isUnlocked) {
-                card.addEventListener('click', () => this.startLevel(level.id));
+                if (isUnlocked) {
+                    card.addEventListener('click', () => this.startLevel(level.id));
+                }
+
+                grid.appendChild(card);
+            });
+        } else {
+            // Render custom levels
+            if (this.customLevels.length === 0) {
+                grid.innerHTML = '<p style="text-align: center; opacity: 0.5; padding: 40px; grid-column: 1 / -1;">Keine eigenen Level vorhanden.<br>Erstelle Level im Editor!</p>';
+                return;
             }
 
-            grid.appendChild(card);
-        });
+            this.customLevels.forEach((level, index) => {
+                const card = document.createElement('div');
+                card.className = 'level-card';
+
+                card.innerHTML = `
+                    <div class="level-number">C${index + 1}</div>
+                    <div style="font-size: 0.9rem; margin-top: 5px;">${level.name || 'Custom Level'}</div>
+                    <div class="level-highscore">${level.difficulty || 'medium'}</div>
+                `;
+
+                card.addEventListener('click', () => this.startCustomLevel(index));
+
+                grid.appendChild(card);
+            });
+        }
     }
 
     renderStars(count) {
@@ -435,6 +491,7 @@ class BreakoutGame {
 
     startLevel(levelId) {
         this.currentLevel = levelId;
+        this.isCustomLevel = false;
         const level = this.levels.find(l => l.id === levelId);
         if (!level) return;
 
@@ -445,6 +502,26 @@ class BreakoutGame {
         this.comboTimer = 0;
 
         this.highScore = this.saveData.progress.levelScores[levelId]?.highScore || 0;
+
+        this.loadLevel(level);
+        this.showScreen(GameState.PLAYING);
+        this.gameRunning = true;
+
+        document.getElementById('startOverlay').style.display = 'flex';
+    }
+
+    startCustomLevel(index) {
+        this.currentLevel = `custom_${index}`;
+        this.isCustomLevel = true;
+        const level = this.customLevels[index];
+        if (!level) return;
+
+        this.score = 0;
+        this.lives = 3;
+        this.scoreMultiplier = 1;
+        this.combo = 0;
+        this.comboTimer = 0;
+        this.highScore = 0;
 
         this.loadLevel(level);
         this.showScreen(GameState.PLAYING);
@@ -472,6 +549,15 @@ class BreakoutGame {
             const x = offsetX + blockData.col * (blockWidth + blockPadding);
             const y = offsetY + blockData.row * (blockHeight + blockPadding);
             const block = new Block(x, y, blockWidth, blockHeight, blockData.type, blockData.colorIndex);
+
+            // Store powerup info if this block has one
+            if (level.powerups) {
+                const powerupData = level.powerups.find(p => p.col === blockData.col && p.row === blockData.row);
+                if (powerupData) {
+                    block.powerupType = powerupData.type;
+                }
+            }
+
             this.blocks.push(block);
         });
 
@@ -699,6 +785,9 @@ class BreakoutGame {
     applyMagneticForce(ball) {
         if (!ball.isMagnetic || !ball.active) return;
 
+        // Only apply magnetic force when ball is moving towards paddle (dy > 0 means moving down)
+        if (ball.dy <= 0) return;
+
         const pBounds = this.paddle.getBounds();
         const dx = pBounds.centerX - ball.x;
         const dy = pBounds.centerY - ball.y;
@@ -785,8 +874,11 @@ class BreakoutGame {
             this.explodeNearbyBlocks(block);
         }
 
-        // Drop powerup
-        if (Math.random() < 0.2) {
+        // Drop powerup - use predefined type if available
+        if (block.powerupType) {
+            this.dropPowerup(bounds.centerX, bounds.centerY, block.powerupType);
+            this.soundManager.playPowerupDrop();
+        } else if (Math.random() < 0.2) {
             this.dropPowerup(bounds.centerX, bounds.centerY);
             this.soundManager.playPowerupDrop();
         }
@@ -825,9 +917,11 @@ class BreakoutGame {
         }
     }
 
-    dropPowerup(x, y) {
-        const types = Object.values(PowerupType);
-        const type = types[Math.floor(Math.random() * types.length)];
+    dropPowerup(x, y, type = null) {
+        if (!type) {
+            const types = Object.values(PowerupType);
+            type = types[Math.floor(Math.random() * types.length)];
+        }
         const powerup = new Powerup(x, y, type);
         this.powerups.push(powerup);
     }
@@ -1098,24 +1192,58 @@ class BreakoutGame {
 
         // Clear grid
         this.editorGrid = [];
+        this.editorPowerupGrid = [];
         for (let row = 0; row < 15; row++) {
             this.editorGrid[row] = [];
+            this.editorPowerupGrid[row] = [];
             for (let col = 0; col < 12; col++) {
                 this.editorGrid[row][col] = null;
+                this.editorPowerupGrid[row][col] = null;
             }
         }
 
         this.setupEditorPalette();
         this.setupEditorCanvas();
+        this.setupEditorButtons();
         this.renderEditorGrid();
     }
 
+    setupEditorButtons() {
+        // Save button
+        document.getElementById('editorSave')?.addEventListener('click', () => {
+            this.saveEditorLevel();
+        });
+
+        // Load button
+        document.getElementById('editorLoad')?.addEventListener('click', () => {
+            this.loadEditorLevel();
+        });
+
+        // Test/Play button
+        document.getElementById('editorTest')?.addEventListener('click', () => {
+            this.testEditorLevel();
+        });
+
+        // Export button
+        document.getElementById('editorExport')?.addEventListener('click', () => {
+            this.exportEditorLevel();
+        });
+
+        // Clear button
+        document.getElementById('editorClear')?.addEventListener('click', () => {
+            if (confirm('Alle Blöcke und Powerups löschen?')) {
+                this.clearEditorGrid();
+            }
+        });
+    }
+
     setupEditorPalette() {
-        const palette = document.getElementById('blockPalette');
-        if (!palette) return;
+        const blockPalette = document.getElementById('blockPalette');
+        const powerupPalette = document.getElementById('powerupPalette');
+        if (!blockPalette || !powerupPalette) return;
 
-        palette.innerHTML = '';
-
+        // Setup block palette
+        blockPalette.innerHTML = '';
         Object.entries(BlockType).forEach(([key, type]) => {
             const div = document.createElement('div');
             div.className = 'palette-block';
@@ -1124,20 +1252,60 @@ class BreakoutGame {
 
             div.addEventListener('click', () => {
                 this.editorSelectedBlock = type;
-                document.querySelectorAll('.palette-block').forEach(el => el.classList.remove('selected'));
+                blockPalette.querySelectorAll('.palette-block').forEach(el => el.classList.remove('selected'));
                 div.classList.add('selected');
             });
 
-            palette.appendChild(div);
+            blockPalette.appendChild(div);
+        });
+        blockPalette.querySelector('.palette-block')?.classList.add('selected');
+
+        // Setup powerup palette
+        powerupPalette.innerHTML = '';
+        Object.entries(PowerupConfig).forEach(([type, config]) => {
+            const div = document.createElement('div');
+            div.className = 'palette-block';
+            div.style.background = config.color;
+            div.textContent = config.icon;
+            div.title = config.name;
+
+            div.addEventListener('click', () => {
+                this.editorSelectedPowerup = type;
+                powerupPalette.querySelectorAll('.palette-block').forEach(el => el.classList.remove('selected'));
+                div.classList.add('selected');
+            });
+
+            powerupPalette.appendChild(div);
+        });
+        powerupPalette.querySelector('.palette-block')?.classList.add('selected');
+        this.editorSelectedPowerup = Object.keys(PowerupConfig)[0];
+
+        // Layer buttons
+        document.querySelectorAll('[data-layer]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-layer]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.editorLayer = btn.dataset.layer;
+
+                // Toggle palettes
+                if (this.editorLayer === 'blocks') {
+                    blockPalette.style.display = 'grid';
+                    powerupPalette.style.display = 'none';
+                    document.getElementById('paletteTitle').textContent = 'Block-Palette';
+                } else {
+                    blockPalette.style.display = 'none';
+                    powerupPalette.style.display = 'grid';
+                    document.getElementById('paletteTitle').textContent = 'Powerup-Palette';
+                }
+
+                this.renderEditorGrid();
+            });
         });
 
-        // Select first by default
-        palette.querySelector('.palette-block')?.classList.add('selected');
-
         // Tool buttons
-        document.querySelectorAll('.tool-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('[data-tool]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.editorTool = btn.dataset.tool;
             });
@@ -1181,13 +1349,23 @@ class BreakoutGame {
         const row = Math.floor(y / cellHeight);
 
         if (row >= 0 && row < 15 && col >= 0 && col < 12) {
-            if (this.editorTool === 'place') {
-                this.editorGrid[row][col] = {
-                    type: this.editorSelectedBlock,
-                    colorIndex: col
-                };
-            } else if (this.editorTool === 'erase') {
-                this.editorGrid[row][col] = null;
+            if (this.editorLayer === 'blocks') {
+                if (this.editorTool === 'place') {
+                    this.editorGrid[row][col] = {
+                        type: this.editorSelectedBlock,
+                        colorIndex: col
+                    };
+                } else if (this.editorTool === 'erase') {
+                    this.editorGrid[row][col] = null;
+                }
+            } else if (this.editorLayer === 'powerups') {
+                if (this.editorTool === 'place') {
+                    this.editorPowerupGrid[row][col] = {
+                        type: this.editorSelectedPowerup
+                    };
+                } else if (this.editorTool === 'erase') {
+                    this.editorPowerupGrid[row][col] = null;
+                }
             }
 
             this.renderEditorGrid();
@@ -1221,20 +1399,293 @@ class BreakoutGame {
             ctx.stroke();
         }
 
-        // Draw blocks
+        if (this.editorLayer === 'blocks') {
+            // Draw blocks
+            for (let row = 0; row < 15; row++) {
+                for (let col = 0; col < 12; col++) {
+                    const cell = this.editorGrid[row][col];
+                    if (cell) {
+                        const x = col * cellWidth;
+                        const y = row * cellHeight;
+
+                        const config = BlockConfig[cell.type];
+                        ctx.fillStyle = config.colors?.[cell.colorIndex] || config.color;
+                        ctx.fillRect(x + 2, y + 2, cellWidth - 4, cellHeight - 4);
+                    }
+                }
+            }
+        } else {
+            // Draw blocks with lower opacity as background
+            ctx.globalAlpha = 0.3;
+            for (let row = 0; row < 15; row++) {
+                for (let col = 0; col < 12; col++) {
+                    const cell = this.editorGrid[row][col];
+                    if (cell) {
+                        const x = col * cellWidth;
+                        const y = row * cellHeight;
+
+                        const config = BlockConfig[cell.type];
+                        ctx.fillStyle = config.colors?.[cell.colorIndex] || config.color;
+                        ctx.fillRect(x + 2, y + 2, cellWidth - 4, cellHeight - 4);
+                    }
+                }
+            }
+            ctx.globalAlpha = 1.0;
+
+            // Draw powerups
+            for (let row = 0; row < 15; row++) {
+                for (let col = 0; col < 12; col++) {
+                    const powerup = this.editorPowerupGrid[row][col];
+                    if (powerup) {
+                        const x = col * cellWidth;
+                        const y = row * cellHeight;
+
+                        const config = PowerupConfig[powerup.type];
+                        ctx.fillStyle = config.color;
+                        ctx.fillRect(x + 2, y + 2, cellWidth - 4, cellHeight - 4);
+
+                        // Draw powerup icon
+                        ctx.fillStyle = '#FFF';
+                        ctx.font = 'bold 16px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(config.icon, x + cellWidth / 2, y + cellHeight / 2);
+                    }
+                }
+            }
+        }
+    }
+
+    saveEditorLevel() {
+        const name = document.getElementById('levelName')?.value || 'Unbenanntes Level';
+        const difficulty = document.getElementById('levelDifficulty')?.value || 'medium';
+        const description = document.getElementById('levelDescription')?.value || '';
+
+        // Convert grid to blocks array
+        const blocks = [];
         for (let row = 0; row < 15; row++) {
             for (let col = 0; col < 12; col++) {
                 const cell = this.editorGrid[row][col];
                 if (cell) {
-                    const x = col * cellWidth;
-                    const y = row * cellHeight;
-
-                    const config = BlockConfig[cell.type];
-                    ctx.fillStyle = config.colors?.[cell.colorIndex] || config.color;
-                    ctx.fillRect(x + 2, y + 2, cellWidth - 4, cellHeight - 4);
+                    blocks.push({
+                        col,
+                        row,
+                        type: cell.type,
+                        colorIndex: cell.colorIndex
+                    });
                 }
             }
         }
+
+        // Convert powerup grid to powerups array
+        const powerups = [];
+        for (let row = 0; row < 15; row++) {
+            for (let col = 0; col < 12; col++) {
+                const powerup = this.editorPowerupGrid[row][col];
+                if (powerup) {
+                    powerups.push({
+                        col,
+                        row,
+                        type: powerup.type
+                    });
+                }
+            }
+        }
+
+        if (blocks.length === 0) {
+            alert('Level muss mindestens einen Block enthalten!');
+            return;
+        }
+
+        const level = {
+            name,
+            difficulty,
+            description,
+            blocks,
+            powerups
+        };
+
+        this.customLevels.push(level);
+        this.saveCustomLevels();
+        alert(`Level "${name}" gespeichert!`);
+    }
+
+    loadEditorLevel() {
+        if (this.customLevels.length === 0) {
+            alert('Keine gespeicherten Level vorhanden!');
+            return;
+        }
+
+        const levelNames = this.customLevels.map((l, i) => `${i + 1}. ${l.name}`).join('\n');
+        const input = prompt(`Welches Level laden?\n\n${levelNames}\n\nGib die Nummer ein:`);
+
+        if (!input) return;
+
+        const index = parseInt(input) - 1;
+        if (index < 0 || index >= this.customLevels.length) {
+            alert('Ungültige Nummer!');
+            return;
+        }
+
+        const level = this.customLevels[index];
+
+        // Load level properties
+        if (document.getElementById('levelName')) document.getElementById('levelName').value = level.name;
+        if (document.getElementById('levelDifficulty')) document.getElementById('levelDifficulty').value = level.difficulty;
+        if (document.getElementById('levelDescription')) document.getElementById('levelDescription').value = level.description || '';
+
+        // Clear grids
+        this.clearEditorGrid();
+
+        // Load blocks
+        level.blocks.forEach(block => {
+            if (block.row >= 0 && block.row < 15 && block.col >= 0 && block.col < 12) {
+                this.editorGrid[block.row][block.col] = {
+                    type: block.type,
+                    colorIndex: block.colorIndex
+                };
+            }
+        });
+
+        // Load powerups
+        if (level.powerups) {
+            level.powerups.forEach(powerup => {
+                if (powerup.row >= 0 && powerup.row < 15 && powerup.col >= 0 && powerup.col < 12) {
+                    this.editorPowerupGrid[powerup.row][powerup.col] = {
+                        type: powerup.type
+                    };
+                }
+            });
+        }
+
+        this.renderEditorGrid();
+        alert(`Level "${level.name}" geladen!`);
+    }
+
+    testEditorLevel() {
+        const blocks = [];
+        for (let row = 0; row < 15; row++) {
+            for (let col = 0; col < 12; col++) {
+                const cell = this.editorGrid[row][col];
+                if (cell) {
+                    blocks.push({
+                        col,
+                        row,
+                        type: cell.type,
+                        colorIndex: cell.colorIndex
+                    });
+                }
+            }
+        }
+
+        if (blocks.length === 0) {
+            alert('Level muss mindestens einen Block enthalten!');
+            return;
+        }
+
+        const powerups = [];
+        for (let row = 0; row < 15; row++) {
+            for (let col = 0; col < 12; col++) {
+                const powerup = this.editorPowerupGrid[row][col];
+                if (powerup) {
+                    powerups.push({
+                        col,
+                        row,
+                        type: powerup.type
+                    });
+                }
+            }
+        }
+
+        const testLevel = {
+            id: 'test',
+            name: 'Test Level',
+            difficulty: 'medium',
+            blocks,
+            powerups
+        };
+
+        this.score = 0;
+        this.lives = 3;
+        this.scoreMultiplier = 1;
+        this.combo = 0;
+        this.comboTimer = 0;
+        this.highScore = 0;
+        this.isCustomLevel = true;
+        this.currentLevel = 'test';
+
+        this.loadLevel(testLevel);
+        this.showScreen(GameState.PLAYING);
+        this.gameRunning = true;
+
+        document.getElementById('startOverlay').style.display = 'flex';
+    }
+
+    exportEditorLevel() {
+        const name = document.getElementById('levelName')?.value || 'Unbenanntes Level';
+        const difficulty = document.getElementById('levelDifficulty')?.value || 'medium';
+        const description = document.getElementById('levelDescription')?.value || '';
+
+        const blocks = [];
+        for (let row = 0; row < 15; row++) {
+            for (let col = 0; col < 12; col++) {
+                const cell = this.editorGrid[row][col];
+                if (cell) {
+                    blocks.push({
+                        col,
+                        row,
+                        type: cell.type,
+                        colorIndex: cell.colorIndex
+                    });
+                }
+            }
+        }
+
+        const powerups = [];
+        for (let row = 0; row < 15; row++) {
+            for (let col = 0; col < 12; col++) {
+                const powerup = this.editorPowerupGrid[row][col];
+                if (powerup) {
+                    powerups.push({
+                        col,
+                        row,
+                        type: powerup.type
+                    });
+                }
+            }
+        }
+
+        if (blocks.length === 0) {
+            alert('Level muss mindestens einen Block enthalten!');
+            return;
+        }
+
+        const level = {
+            name,
+            difficulty,
+            description,
+            blocks,
+            powerups
+        };
+
+        const json = JSON.stringify(level, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${name.replace(/[^a-z0-9]/gi, '_')}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    clearEditorGrid() {
+        for (let row = 0; row < 15; row++) {
+            for (let col = 0; col < 12; col++) {
+                this.editorGrid[row][col] = null;
+                this.editorPowerupGrid[row][col] = null;
+            }
+        }
+        this.renderEditorGrid();
     }
 
     renderHighScores() {
