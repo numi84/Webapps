@@ -850,40 +850,6 @@ class BreakoutGame {
             }
         }
 
-            if (powerup.collected) {
-                // Update active powerup
-                const stillActive = powerup.update(deltaTime);
-                if (!stillActive) {
-                    powerup.deactivate(this);
-                    this.activePowerups.splice(this.activePowerups.indexOf(powerup), 1);
-                }
-            } else {
-                powerup.update(deltaTime);
-
-                // Check collection
-                if (powerup.checkCollision(this.paddle)) {
-                    // Check if same powerup type is already active
-                    const existingPowerup = this.activePowerups.find(p => p.type === powerup.type && p.active);
-
-                    if (existingPowerup && existingPowerup.duration > 0) {
-                        // Extend the duration of existing powerup
-                        existingPowerup.extendDuration();
-                        this.powerups.splice(i, 1);
-                    } else {
-                        // Activate new powerup
-                        powerup.activate(this);
-                        this.powerups.splice(i, 1);
-                        this.activePowerups.push(powerup);
-                    }
-
-                    this.particles.emitPowerupCollect(powerup.x, powerup.y, powerup.color);
-                    this.soundManager.playPowerupCollect();
-                    this.saveManager.updateStatistics({ powerupsCollected: 1 }, this.saveData);
-                }
-                // Remove if off screen
-                else if (powerup.y > this.canvas.height) {
-                    this.powerups.splice(i, 1);
-                }
         // Update active powerups
         for (let i = this.activePowerups.length - 1; i >= 0; i--) {
             const powerup = this.activePowerups[i];
