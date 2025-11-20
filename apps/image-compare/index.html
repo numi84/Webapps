@@ -18,26 +18,36 @@
             <div class="upload-section">
                 <div class="upload-box">
                     <h3>Bild A</h3>
-                    <input type="file" id="imageA" accept="image/*">
+                    <input type="file" id="imageA" accept="image/*,.pdf,application/pdf">
                     <label for="imageA" class="upload-label">
                         <span class="upload-icon">📁</span>
                         <span>Bild A hochladen</span>
                     </label>
+                    <small>Unterstützt: JPG, PNG, GIF, BMP, WebP, SVG, PDF</small>
                 </div>
                 <div class="upload-box">
                     <h3>Bild B</h3>
-                    <input type="file" id="imageB" accept="image/*">
+                    <input type="file" id="imageB" accept="image/*,.pdf,application/pdf">
                     <label for="imageB" class="upload-label">
                         <span class="upload-icon">📁</span>
                         <span>Bild B hochladen</span>
                     </label>
+                    <small>Unterstützt: JPG, PNG, GIF, BMP, WebP, SVG, PDF</small>
                 </div>
             </div>
 
             <div class="controls">
                 <div class="control-group">
-                    <label for="sensitivity">Empfindlichkeit: <span id="sensitivityValue">30</span></label>
-                    <input type="range" id="sensitivity" min="1" max="100" value="30">
+                    <label for="sensitivity">Empfindlichkeit: <span id="sensitivityValue">70</span></label>
+                    <input type="range" id="sensitivity" min="0" max="100" value="70">
+                </div>
+                <div class="control-group zoom-controls">
+                    <label>Zoom: <span id="zoomValue">100</span>%</label>
+                    <div class="zoom-buttons">
+                        <button id="zoomOut" class="btn-zoom" title="Verkleinern">−</button>
+                        <button id="zoomReset" class="btn-zoom" title="Zurücksetzen">⟲</button>
+                        <button id="zoomIn" class="btn-zoom" title="Vergrößern">+</button>
+                    </div>
                 </div>
                 <button id="compareBtn" class="btn-primary" disabled>Bilder vergleichen</button>
                 <button id="resetBtn" class="btn-secondary">Zurücksetzen</button>
@@ -55,18 +65,27 @@
                     <div class="view-content active" id="sideBySideView">
                         <div class="image-wrapper">
                             <h4>Bild A</h4>
-                            <canvas id="canvasA"></canvas>
+                            <div class="canvas-container">
+                                <canvas id="canvasA"></canvas>
+                                <canvas class="minimap" id="minimapA"></canvas>
+                            </div>
                         </div>
                         <div class="image-wrapper">
                             <h4>Bild B</h4>
-                            <canvas id="canvasB"></canvas>
+                            <div class="canvas-container">
+                                <canvas id="canvasB"></canvas>
+                                <canvas class="minimap" id="minimapB"></canvas>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Overlay View -->
                     <div class="view-content" id="overlayView">
                         <div class="image-wrapper single">
-                            <canvas id="canvasOverlay"></canvas>
+                            <div class="canvas-container">
+                                <canvas id="canvasOverlay"></canvas>
+                                <canvas class="minimap" id="minimapOverlay"></canvas>
+                            </div>
                             <div class="overlay-controls">
                                 <label>Transparenz: <span id="opacityValue">50</span>%</label>
                                 <input type="range" id="opacity" min="0" max="100" value="50">
@@ -78,7 +97,10 @@
                     <div class="view-content" id="differenceView">
                         <div class="image-wrapper single">
                             <h4>Erkannte Unterschiede</h4>
-                            <canvas id="canvasDiff"></canvas>
+                            <div class="canvas-container">
+                                <canvas id="canvasDiff"></canvas>
+                                <canvas class="minimap" id="minimapDiff"></canvas>
+                            </div>
                             <div class="stats" id="diffStats"></div>
                         </div>
                     </div>
@@ -87,6 +109,14 @@
         </main>
     </div>
 
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Configure PDF.js worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
     <script src="image-compare.js"></script>
 </body>
 </html>
