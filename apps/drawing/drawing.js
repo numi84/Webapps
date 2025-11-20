@@ -20,6 +20,8 @@ const colorPicker = document.getElementById('color-picker');
 const colorPresets = document.querySelectorAll('.color-preset');
 const sizeSlider = document.getElementById('size-slider');
 const sizeValue = document.getElementById('size-value');
+const importBtn = document.getElementById('import-btn');
+const imageInput = document.getElementById('image-input');
 const clearBtn = document.getElementById('clear-btn');
 const saveBtn = document.getElementById('save-btn');
 
@@ -116,8 +118,37 @@ function clearCanvas() {
 function saveDrawing() {
     const link = document.createElement('a');
     link.download = `zeichnung-${Date.now()}.png`;
-    link.href = canvas.toDataURL();
+    link.href = canvas.toDataURL('image/png');
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
+}
+
+// Import Image
+function importImage() {
+    imageInput.click();
+}
+
+// Load and display the imported image
+function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+            // Draw the image on the canvas
+            // Scale the image to fit the canvas while maintaining aspect ratio
+            const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+            const x = (canvas.width / 2) - (img.width / 2) * scale;
+            const y = (canvas.height / 2) - (img.height / 2) * scale;
+
+            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
 }
 
 // Event Listeners - Mouse
@@ -157,6 +188,8 @@ sizeSlider.addEventListener('input', (e) => {
 });
 
 // Buttons
+importBtn.addEventListener('click', importImage);
+imageInput.addEventListener('change', handleImageUpload);
 clearBtn.addEventListener('click', clearCanvas);
 saveBtn.addEventListener('click', saveDrawing);
 
