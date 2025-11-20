@@ -1219,6 +1219,11 @@ class BreakoutGame {
             this.loadEditorLevel();
         });
 
+        // Import button
+        document.getElementById('editorImport')?.addEventListener('click', () => {
+            this.importEditorLevel();
+        });
+
         // Test/Play button
         document.getElementById('editorTest')?.addEventListener('click', () => {
             this.testEditorLevel();
@@ -1528,24 +1533,68 @@ class BreakoutGame {
         }
 
         const level = this.customLevels[index];
+        this.loadLevelIntoEditor(level);
+        alert(`Level "${level.name}" geladen!`);
+    }
 
+    importEditorLevel() {
+        // Create file input element
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const level = JSON.parse(event.target.result);
+
+                    // Validate level structure
+                    if (!level.blocks || !Array.isArray(level.blocks)) {
+                        alert('Ungültiges Level-Format: "blocks" fehlt oder ist kein Array!');
+                        return;
+                    }
+
+                    // Load level into editor
+                    this.loadLevelIntoEditor(level);
+                    alert(`Level "${level.name || 'Unbenannt'}" importiert!`);
+
+                } catch (error) {
+                    alert('Fehler beim Importieren: Ungültige JSON-Datei!\n\n' + error.message);
+                    console.error('Import error:', error);
+                }
+            };
+
+            reader.readAsText(file);
+        };
+
+        // Trigger file selection
+        input.click();
+    }
+
+    loadLevelIntoEditor(level) {
         // Load level properties
-        if (document.getElementById('levelName')) document.getElementById('levelName').value = level.name;
-        if (document.getElementById('levelDifficulty')) document.getElementById('levelDifficulty').value = level.difficulty;
+        if (document.getElementById('levelName')) document.getElementById('levelName').value = level.name || '';
+        if (document.getElementById('levelDifficulty')) document.getElementById('levelDifficulty').value = level.difficulty || 'medium';
         if (document.getElementById('levelDescription')) document.getElementById('levelDescription').value = level.description || '';
 
         // Clear grids
         this.clearEditorGrid();
 
         // Load blocks
-        level.blocks.forEach(block => {
-            if (block.row >= 0 && block.row < 15 && block.col >= 0 && block.col < 12) {
-                this.editorGrid[block.row][block.col] = {
-                    type: block.type,
-                    colorIndex: block.colorIndex
-                };
-            }
-        });
+        if (level.blocks) {
+            level.blocks.forEach(block => {
+                if (block.row >= 0 && block.row < 15 && block.col >= 0 && block.col < 12) {
+                    this.editorGrid[block.row][block.col] = {
+                        type: block.type,
+                        colorIndex: block.colorIndex
+                    };
+                }
+            });
+        }
 
         // Load powerups
         if (level.powerups) {
@@ -1559,7 +1608,6 @@ class BreakoutGame {
         }
 
         this.renderEditorGrid();
-        alert(`Level "${level.name}" geladen!`);
     }
 
     testEditorLevel() {
