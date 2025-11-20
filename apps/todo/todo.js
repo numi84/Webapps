@@ -12,6 +12,9 @@ const completedCountEl = document.getElementById('completed-count');
 const filterButtons = document.querySelectorAll('.filter-btn');
 const clearCompletedBtn = document.getElementById('clear-completed-btn');
 const clearAllBtn = document.getElementById('clear-all-btn');
+const exportBtn = document.getElementById('export-btn');
+const importBtn = document.getElementById('import-btn');
+const importFileInput = document.getElementById('import-file-input');
 
 // Load todos from LocalStorage
 function loadTodos() {
@@ -163,6 +166,75 @@ function setFilter(filter) {
     renderTodos();
 }
 
+// Export Todos
+function exportTodos() {
+    const dataStr = JSON.stringify(todos, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    link.download = `todos-backup-${timestamp}.json`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(link.href);
+}
+
+// Import Todos
+function importTodos() {
+    importFileInput.click();
+}
+
+// Handle File Import
+function handleFileImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const importedTodos = JSON.parse(e.target.result);
+
+            if (!Array.isArray(importedTodos)) {
+                alert('Ungültiges Dateiformat! Die Datei muss ein JSON-Array enthalten.');
+                return;
+            }
+
+            // Validate todo structure
+            const isValid = importedTodos.every(todo =>
+                todo.hasOwnProperty('id') &&
+                todo.hasOwnProperty('text') &&
+                todo.hasOwnProperty('completed')
+            );
+
+            if (!isValid) {
+                alert('Ungültiges Todo-Format! Bitte stelle sicher, dass alle Todos die erforderlichen Felder haben.');
+                return;
+            }
+
+            const confirmMsg = `Möchtest du ${importedTodos.length} Todo(s) importieren?\n\nHinweis: Dies wird deine aktuellen Todos ersetzen!`;
+            if (confirm(confirmMsg)) {
+                todos = importedTodos;
+                saveTodos();
+                renderTodos();
+                alert(`${importedTodos.length} Todo(s) erfolgreich importiert!`);
+            }
+        } catch (error) {
+            alert('Fehler beim Lesen der Datei! Bitte stelle sicher, dass es eine gültige JSON-Datei ist.');
+            console.error('Import error:', error);
+        }
+
+        // Reset file input
+        event.target.value = '';
+    };
+
+    reader.readAsText(file);
+}
+
 // Event Listeners
 addBtn.addEventListener('click', addTodo);
 
@@ -180,6 +252,9 @@ filterButtons.forEach(btn => {
 
 clearCompletedBtn.addEventListener('click', clearCompleted);
 clearAllBtn.addEventListener('click', clearAll);
+exportBtn.addEventListener('click', exportTodos);
+importBtn.addEventListener('click', importTodos);
+importFileInput.addEventListener('change', handleFileImport);
 
 // Initialize
 loadTodos();
