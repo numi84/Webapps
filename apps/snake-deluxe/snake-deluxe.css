@@ -187,13 +187,14 @@ header {
 
 .canvas-wrapper {
     position: relative;
+    display: inline-block;
+    margin: 0 auto;
     display: flex;
     justify-content: center;
-    margin: 0 auto;
 }
 
-#game-canvas,
-#particle-canvas {
+#game-canvas {
+    display: block;
     border-radius: 10px;
     box-shadow:
         0 0 30px rgba(0, 255, 255, 0.4),
@@ -202,17 +203,18 @@ header {
     border: 3px solid transparent;
     background: linear-gradient(#0a0a1a, #0a0a1a) padding-box,
                 linear-gradient(135deg, #00ffff, #ff00ff, #ffff00) border-box;
-}
-
-#game-canvas {
-    display: block;
+    position: relative;
+    z-index: 1;
 }
 
 #particle-canvas {
     position: absolute;
     top: 0;
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 10px;
     pointer-events: none;
+    z-index: 2;
 }
 
 .controls {
