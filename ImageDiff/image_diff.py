@@ -312,12 +312,27 @@ class ImageDiffApp:
                     messagebox.showerror("Fehler", "PDF-Unterstützung nicht verfügbar. Bitte installieren Sie pdf2image und poppler.")
                     return
                 # Convert first page of PDF to image
-                images = convert_from_path(file_path, first_page=1, last_page=1)
-                if not images:
-                    messagebox.showerror("Fehler", "PDF-Datei konnte nicht geladen werden.")
+                try:
+                    images = convert_from_path(file_path, first_page=1, last_page=1)
+                    if not images:
+                        messagebox.showerror("Fehler", "PDF-Datei konnte nicht geladen werden.")
+                        return
+                    # Just validate, don't store the converted image yet
+                    test_img = images[0]
+                except Exception as pdf_error:
+                    error_msg = str(pdf_error).lower()
+                    if "unable to get page count" in error_msg or "poppler" in error_msg:
+                        messagebox.showerror("Poppler nicht gefunden",
+                            "Poppler ist nicht installiert oder nicht im PATH.\n\n"
+                            "Windows Installation:\n"
+                            "1. Download: github.com/oschwartz10612/poppler-windows/releases\n"
+                            "2. Entpacken nach C:\\poppler\n"
+                            "3. Zu PATH hinzufügen: C:\\poppler\\Library\\bin\n"
+                            "4. CMD neu starten und 'pdftoppm -v' testen\n\n"
+                            "Alternativ: Verwenden Sie PNG/JPG statt PDF.")
+                    else:
+                        messagebox.showerror("PDF Fehler", f"PDF konnte nicht geladen werden:\n{str(pdf_error)}")
                     return
-                # Just validate, don't store the converted image yet
-                test_img = images[0]
             else:
                 test_img = Image.open(file_path)
                 test_img.verify()  # Verify it's a valid image
@@ -440,8 +455,15 @@ class ImageDiffApp:
         ext = Path(file_path).suffix.lower()
 
         if ext == '.pdf':
-            images = convert_from_path(file_path, first_page=1, last_page=1)
-            return images[0]
+            try:
+                images = convert_from_path(file_path, first_page=1, last_page=1)
+                return images[0]
+            except Exception as e:
+                error_msg = str(e).lower()
+                if "unable to get page count" in error_msg or "poppler" in error_msg:
+                    raise Exception("Poppler nicht gefunden. Bitte installieren Sie Poppler und fügen Sie es zum PATH hinzu.")
+                else:
+                    raise Exception(f"PDF Fehler: {str(e)}")
         else:
             return Image.open(file_path)
 
