@@ -18,21 +18,21 @@
             <div class="upload-section">
                 <div class="upload-box">
                     <h3>Bild A</h3>
-                    <input type="file" id="imageA" accept="image/*,.pdf,application/pdf">
+                    <input type="file" id="imageA" accept="image/*,.pdf,.tif,.tiff,application/pdf">
                     <label for="imageA" class="upload-label">
                         <span class="upload-icon">📁</span>
                         <span>Bild A hochladen</span>
                     </label>
-                    <small>Unterstützt: JPG, PNG, GIF, BMP, WebP, SVG, PDF</small>
+                    <small>Unterstützt: JPG, PNG, GIF, BMP, WebP, SVG, PDF, TIF/TIFF</small>
                 </div>
                 <div class="upload-box">
                     <h3>Bild B</h3>
-                    <input type="file" id="imageB" accept="image/*,.pdf,application/pdf">
+                    <input type="file" id="imageB" accept="image/*,.pdf,.tif,.tiff,application/pdf">
                     <label for="imageB" class="upload-label">
                         <span class="upload-icon">📁</span>
                         <span>Bild B hochladen</span>
                     </label>
-                    <small>Unterstützt: JPG, PNG, GIF, BMP, WebP, SVG, PDF</small>
+                    <small>Unterstützt: JPG, PNG, GIF, BMP, WebP, SVG, PDF, TIF/TIFF</small>
                 </div>
             </div>
 
@@ -117,6 +117,8 @@
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         }
     </script>
+    <!-- TIFF.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/tiff.js@latest/tiff.min.js"></script>
     <script src="image-compare.js"></script>
 </body>
 </html>
