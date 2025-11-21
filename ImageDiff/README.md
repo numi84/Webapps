@@ -16,9 +16,9 @@ Ein einfaches Python-Tool zum Vergleich von zwei Bildern mit visueller Darstellu
   - PDF (erste Seite)
 - **Einstellbare Empfindlichkeit** (0-100%, Standard: 80%)
 - **Anpassbare Farbcodierung:**
-  - 🟡 **Gelb** (Standard): Identische Pixel in beiden Bildern
-  - 🔴 **Rot** (Standard): Unterschiedliche Pixel (heller in Bild A)
-  - 🟢 **Grün** (Standard): Unterschiedliche Pixel (heller in Bild B)
+  - ⚫ **Schwarz** (Standard): Identische Pixel in beiden Bildern
+  - 🔴 **Rot** (Standard): Nur in Bild A vorhanden (nicht in B)
+  - 🟢 **Grün** (Standard): Nur in Bild B vorhanden (nicht in A)
   - Alle drei Farben können über Color Picker individuell angepasst werden
 - **Intelligente Weiß-Erhaltung**: Weiße Pixel (RGB ≥ 250) bleiben im Vergleichsbild weiß
 - **Flexible Export-Optionen:**
@@ -84,9 +84,9 @@ python3 image_diff.py
    - **Empfindlichkeit:** Bewege den Slider "Sensitivity" (0-100%, Standard: 80%)
      - Höhere Werte = strengerer Vergleich (mehr Unterschiede werden erkannt)
    - **Farben:** (Optional) Klicke auf die Farbfelder um die Farben anzupassen:
-     - **Identical**: Farbe für identische Pixel (Standard: Gelb)
-     - **Difference A**: Farbe für Unterschiede in Bild A (Standard: Rot)
-     - **Difference B**: Farbe für Unterschiede in Bild B (Standard: Grün)
+     - **Identical**: Farbe für identische Pixel (Standard: Schwarz)
+     - **Difference A**: Farbe für Pixel nur in Bild A (Standard: Rot)
+     - **Difference B**: Farbe für Pixel nur in Bild B (Standard: Grün)
 
 3. **Vergleich starten:**
    - Klicke auf "Compare Images"
@@ -118,10 +118,11 @@ Das Tool überprüft automatisch:
 3. Erkennung von weißen Pixeln (RGB ≥ 250 in beiden Bildern)
 4. Pixel-für-Pixel Vergleich mit konfigurierbarer Toleranz
 5. Farbzuordnung basierend auf Unterschieden:
-   - **Weiß**: Pixel ist in beiden Bildern weiß (bleiben erhalten)
-   - **Benutzerdefinierte Farbe** (Standard Gelb): Differenz unter Schwellwert (identisch)
-   - **Benutzerdefinierte Farbe** (Standard Rot): Unterschied vorhanden, Pixel in Bild A heller
-   - **Benutzerdefinierte Farbe** (Standard Grün): Unterschied vorhanden, Pixel in Bild B heller
+   - **Weiß**: Pixel ist in beiden Bildern weiß (RGB ≥ 250, bleiben erhalten)
+   - **Benutzerdefinierte Farbe** (Standard Schwarz): Differenz unter Schwellwert (identisch)
+   - **Benutzerdefinierte Farbe** (Standard Rot): Pixel nur in Bild A vorhanden (nicht in B)
+   - **Benutzerdefinierte Farbe** (Standard Grün): Pixel nur in Bild B vorhanden (nicht in A)
+   - Pixel ist "vorhanden" wenn Helligkeit < 240, "nicht vorhanden" wenn Helligkeit ≥ 240
 
 ### Empfindlichkeit
 

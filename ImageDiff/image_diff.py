@@ -3,8 +3,8 @@
 ImageDiff - A simple image comparison tool
 Compares two images and highlights differences with color coding:
 - Black: Identical pixels (default)
-- Red: Different in image A
-- Green: Different in image B
+- Red: Only present in image A (not in B)
+- Green: Only present in image B (not in A)
 """
 
 import tkinter as tk
@@ -179,7 +179,7 @@ class ImageDiffApp:
                                           width=4, height=1, relief=tk.RAISED,
                                           borderwidth=2, cursor='hand2')
         self.color_diff_a_btn.grid(row=5, column=1, sticky=tk.W, padx=(0, 10), pady=(8, 0))
-        ttk.Label(settings_frame, text="(Pixel heller in Zeichnung A)",
+        ttk.Label(settings_frame, text="(Nur in Zeichnung A vorhanden)",
                  font=('Segoe UI', 9, 'italic')).grid(row=5, column=2, sticky=tk.W, pady=(8, 0))
 
         # Difference B color
@@ -191,7 +191,7 @@ class ImageDiffApp:
                                           width=4, height=1, relief=tk.RAISED,
                                           borderwidth=2, cursor='hand2')
         self.color_diff_b_btn.grid(row=6, column=1, sticky=tk.W, padx=(0, 10), pady=(8, 0))
-        ttk.Label(settings_frame, text="(Pixel heller in Zeichnung B)",
+        ttk.Label(settings_frame, text="(Nur in Zeichnung B vorhanden)",
                  font=('Segoe UI', 9, 'italic')).grid(row=6, column=2, sticky=tk.W, pady=(8, 0))
 
         # Action buttons
@@ -391,6 +391,8 @@ class ImageDiffApp:
             return
 
         try:
+            # Show loading cursor (wait/watch)
+            self.root.config(cursor="watch")
             self.update_status("Zeichnungen werden verglichen...", complete=False)
             self.root.update()
 
@@ -421,10 +423,15 @@ class ImageDiffApp:
             # Enable save button
             self.save_btn.config(state=tk.NORMAL)
 
+            # Restore normal cursor
+            self.root.config(cursor="")
+
             # Update status with success highlight (no popup)
             self.update_status("Vergleich abgeschlossen! Sie können das Ergebnis jetzt speichern.", complete=True)
 
         except Exception as e:
+            # Restore normal cursor on error
+            self.root.config(cursor="")
             messagebox.showerror("Fehler", f"Vergleich fehlgeschlagen: {str(e)}")
             self.update_status("Vergleich fehlgeschlagen.", complete=False)
 
@@ -473,19 +480,34 @@ class ImageDiffApp:
         identical_non_white_mask = identical_mask & ~white_mask
         result[identical_non_white_mask] = list(self.color_identical)
 
-        # For different pixels: determine if more from A or B
+        # For different pixels: determine if only in A or only in B
         different_mask = (~identical_mask) & (~white_mask)
+
+        # Threshold to determine if pixel is "present" (dark/colored) or "absent" (white/light)
+        presence_threshold = 240
 
         brightness_a = np.mean(arr_a, axis=2)
         brightness_b = np.mean(arr_b, axis=2)
 
-        # Difference A: brighter in A (or equal)
-        diff_a_mask = different_mask & (brightness_a >= brightness_b)
+        # Pixel is "present" if brightness < threshold, "absent" if >= threshold
+        present_in_a = brightness_a < presence_threshold
+        present_in_b = brightness_b < presence_threshold
+
+        # Difference A: present in A but absent in B (only in A)
+        diff_a_mask = different_mask & present_in_a & (~present_in_b)
         result[diff_a_mask] = list(self.color_diff_a)
 
-        # Difference B: brighter in B
-        diff_b_mask = different_mask & (brightness_a < brightness_b)
+        # Difference B: present in B but absent in A (only in B)
+        diff_b_mask = different_mask & present_in_b & (~present_in_a)
         result[diff_b_mask] = list(self.color_diff_b)
+
+        # Remaining different pixels that are present in both
+        # Color based on which is darker/more prominent
+        remaining_mask = different_mask & present_in_a & present_in_b
+        darker_in_a = remaining_mask & (brightness_a < brightness_b)
+        darker_in_b = remaining_mask & (brightness_a >= brightness_b)
+        result[darker_in_a] = list(self.color_diff_a)
+        result[darker_in_b] = list(self.color_diff_b)
 
         # Convert back to PIL Image
         result_img = Image.fromarray(result, mode='RGB')
