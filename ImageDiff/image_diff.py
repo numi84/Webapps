@@ -28,7 +28,7 @@ class ImageDiffApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Zeichnung A-B Vergleich")
-        self.root.geometry("1000x750")
+        self.root.geometry("1000x1000")
         self.root.resizable(True, True)
 
         # Configure modern Windows 11 style
