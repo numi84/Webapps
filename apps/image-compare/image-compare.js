@@ -13,6 +13,11 @@ class ImageCompare {
         this.lastX = 0;
         this.lastY = 0;
 
+        // Performance optimization: cache diff canvas
+        this.cachedDiffCanvas = null;
+        this.animationFrameId = null;
+        this.minimapUpdateTimeout = null;
+
         this.initElements();
         this.attachEventListeners();
     }
@@ -105,7 +110,12 @@ class ImageCompare {
         // Check if file is a PDF
         if (file.type === 'application/pdf') {
             await this.handlePdfUpload(file, imageId, event.target);
-        } else {
+        }
+        // Check if file is a TIFF
+        else if (file.name.toLowerCase().endsWith('.tif') || file.name.toLowerCase().endsWith('.tiff')) {
+            await this.handleTiffUpload(file, imageId, event.target);
+        }
+        else {
             // Handle regular image files
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -169,6 +179,41 @@ class ImageCompare {
         } catch (error) {
             console.error('Fehler beim Laden der PDF:', error);
             alert('Fehler beim Laden der PDF-Datei. Bitte versuchen Sie es erneut.');
+        }
+    }
+
+    async handleTiffUpload(file, imageId, inputElement) {
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+
+            // Use Tiff.js to decode TIFF
+            const tiff = new Tiff({ buffer: arrayBuffer });
+            const canvas = tiff.toCanvas();
+
+            if (!canvas) {
+                throw new Error('TIFF konnte nicht dekodiert werden');
+            }
+
+            // Convert canvas to image
+            const img = new Image();
+            img.onload = () => {
+                if (imageId === 'A') {
+                    this.imageA = img;
+                } else {
+                    this.imageB = img;
+                }
+
+                // Update upload label
+                const label = inputElement.nextElementSibling;
+                label.querySelector('span:last-child').textContent = file.name;
+                label.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+
+                this.checkIfReadyToCompare();
+            };
+            img.src = canvas.toDataURL();
+        } catch (error) {
+            console.error('Fehler beim Laden der TIFF:', error);
+            alert('Fehler beim Laden der TIFF-Datei. Bitte versuchen Sie es erneut.');
         }
     }
 
@@ -238,6 +283,20 @@ class ImageCompare {
         const ctxB = this.canvasB.getContext('2d');
         const ctxDiff = this.canvasDiff.getContext('2d');
 
+        // Save the current transform state
+        const currentZoom = this.zoom;
+        const currentPanX = this.panX;
+        const currentPanY = this.panY;
+
+        // Temporarily reset zoom/pan for accurate pixel comparison
+        this.zoom = 1;
+        this.panX = 0;
+        this.panY = 0;
+
+        // Redraw without zoom for comparison
+        this.drawImageOnCanvas(this.canvasA, this.imageA, width, height);
+        this.drawImageOnCanvas(this.canvasB, this.imageB, width, height);
+
         const imageDataA = ctxA.getImageData(0, 0, width, height);
         const imageDataB = ctxB.getImageData(0, 0, width, height);
         const diffImageData = ctxDiff.createImageData(width, height);
@@ -275,6 +334,20 @@ class ImageCompare {
         }
 
         ctxDiff.putImageData(diffImageData, 0, 0);
+
+        // Create cached version of difference canvas
+        if (!this.cachedDiffCanvas) {
+            this.cachedDiffCanvas = document.createElement('canvas');
+        }
+        this.cachedDiffCanvas.width = width;
+        this.cachedDiffCanvas.height = height;
+        const cachedCtx = this.cachedDiffCanvas.getContext('2d');
+        cachedCtx.putImageData(diffImageData, 0, 0);
+
+        // Restore zoom/pan state
+        this.zoom = currentZoom;
+        this.panX = currentPanX;
+        this.panY = currentPanY;
 
         // Store diff data
         this.diffData = {
@@ -354,7 +427,15 @@ class ImageCompare {
     handleZoom(delta) {
         this.zoom = Math.max(0.5, Math.min(5, this.zoom + delta));
         this.zoomValue.textContent = Math.round(this.zoom * 100);
-        this.redrawAll();
+
+        // Use requestAnimationFrame for smooth updates
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+        }
+        this.animationFrameId = requestAnimationFrame(() => {
+            this.redrawAll();
+            this.animationFrameId = null;
+        });
     }
 
     handleWheelZoom(e) {
@@ -390,7 +471,14 @@ class ImageCompare {
         this.lastX = e.clientX;
         this.lastY = e.clientY;
 
-        this.redrawAll();
+        // Use requestAnimationFrame for smooth updates
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+        }
+        this.animationFrameId = requestAnimationFrame(() => {
+            this.redrawAll();
+            this.animationFrameId = null;
+        });
     }
 
     endPan() {
@@ -408,31 +496,58 @@ class ImageCompare {
         this.drawImageOnCanvas(this.canvasB, this.imageB, width, height);
         this.renderOverlay(this.opacitySlider.value / 100);
 
-        if (this.diffData) {
-            this.calculateDifferences(width, height);
+        // Only redraw diff canvas with cached data (no recalculation)
+        if (this.cachedDiffCanvas) {
+            this.drawDiffWithTransform(width, height);
         }
 
         this.updateMinimaps();
     }
 
+    drawDiffWithTransform(width, height) {
+        const ctx = this.canvasDiff.getContext('2d');
+
+        ctx.save();
+        ctx.clearRect(0, 0, this.canvasDiff.width, this.canvasDiff.height);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, width, height);
+
+        // Apply zoom and pan transformations
+        ctx.translate(this.panX + width / 2, this.panY + height / 2);
+        ctx.scale(this.zoom, this.zoom);
+        ctx.translate(-width / 2, -height / 2);
+
+        // Draw cached diff canvas
+        ctx.drawImage(this.cachedDiffCanvas, 0, 0);
+
+        ctx.restore();
+    }
+
     updateMinimaps() {
         if (!this.imageA || !this.imageB) return;
 
-        const minimaps = [
-            { canvas: this.minimapA, source: this.canvasA },
-            { canvas: this.minimapB, source: this.canvasB },
-            { canvas: this.minimapOverlay, source: this.canvasOverlay },
-            { canvas: this.minimapDiff, source: this.canvasDiff }
-        ];
+        // Throttle minimap updates for better performance
+        if (this.minimapUpdateTimeout) {
+            clearTimeout(this.minimapUpdateTimeout);
+        }
 
-        minimaps.forEach(({ canvas, source }) => {
-            if (this.zoom > 1) {
-                canvas.classList.add('active');
-                this.drawMinimap(canvas, source);
-            } else {
-                canvas.classList.remove('active');
-            }
-        });
+        this.minimapUpdateTimeout = setTimeout(() => {
+            const minimaps = [
+                { canvas: this.minimapA, source: this.canvasA },
+                { canvas: this.minimapB, source: this.canvasB },
+                { canvas: this.minimapOverlay, source: this.canvasOverlay },
+                { canvas: this.minimapDiff, source: this.canvasDiff }
+            ];
+
+            minimaps.forEach(({ canvas, source }) => {
+                if (this.zoom > 1) {
+                    canvas.classList.add('active');
+                    this.drawMinimap(canvas, source);
+                } else {
+                    canvas.classList.remove('active');
+                }
+            });
+        }, 50); // Update minimaps every 50ms max
     }
 
     drawMinimap(minimap, sourceCanvas) {
@@ -475,6 +590,15 @@ class ImageCompare {
         this.panX = 0;
         this.panY = 0;
         this.zoomValue.textContent = '100';
+
+        // Clear cached diff canvas
+        this.cachedDiffCanvas = null;
+
+        // Cancel any pending animation frames
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
 
         // Clear file inputs
         this.inputA.value = '';
