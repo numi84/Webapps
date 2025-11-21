@@ -8,7 +8,7 @@ Compares two images and highlights differences with color coding:
 """
 
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox, colorchooser
 from tkinterdnd2 import DND_FILES, TkinterDnD
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
@@ -35,6 +35,11 @@ class ImageDiffApp:
         self.image_a_path = None
         self.image_b_path = None
         self.result_image = None
+
+        # Color settings for comparison (RGB tuples)
+        self.color_identical = (255, 255, 0)  # Yellow
+        self.color_diff_a = (255, 0, 0)       # Red
+        self.color_diff_b = (0, 255, 0)       # Green
 
         # Supported formats
         self.supported_formats = [
@@ -97,6 +102,43 @@ class ImageDiffApp:
         tooltip = ttk.Label(settings_frame, text="(Higher value = more strict comparison)",
                            font=('Arial', 9, 'italic'))
         tooltip.grid(row=1, column=1, sticky=tk.W, pady=(5, 0))
+
+        # Color settings section
+        ttk.Separator(settings_frame, orient='horizontal').grid(row=2, column=0, columnspan=3,
+                                                                sticky=(tk.W, tk.E), pady=(15, 10))
+
+        ttk.Label(settings_frame, text="Color Settings:", font=('Arial', 10, 'bold')).grid(
+            row=3, column=0, columnspan=3, sticky=tk.W, pady=(0, 10))
+
+        # Identical pixels color
+        ttk.Label(settings_frame, text="Identical:").grid(row=4, column=0, sticky=tk.W)
+        self.color_identical_btn = tk.Button(settings_frame, text="   ",
+                                             bg=self.rgb_to_hex(self.color_identical),
+                                             command=lambda: self.choose_color('identical'),
+                                             width=3, relief=tk.RAISED, borderwidth=2)
+        self.color_identical_btn.grid(row=4, column=1, sticky=tk.W, padx=(0, 5))
+        ttk.Label(settings_frame, text="(Pixels identical in both images)",
+                 font=('Arial', 8, 'italic')).grid(row=4, column=2, sticky=tk.W)
+
+        # Difference A color
+        ttk.Label(settings_frame, text="Difference A:").grid(row=5, column=0, sticky=tk.W, pady=(5, 0))
+        self.color_diff_a_btn = tk.Button(settings_frame, text="   ",
+                                          bg=self.rgb_to_hex(self.color_diff_a),
+                                          command=lambda: self.choose_color('diff_a'),
+                                          width=3, relief=tk.RAISED, borderwidth=2)
+        self.color_diff_a_btn.grid(row=5, column=1, sticky=tk.W, padx=(0, 5), pady=(5, 0))
+        ttk.Label(settings_frame, text="(Pixels brighter in Image A)",
+                 font=('Arial', 8, 'italic')).grid(row=5, column=2, sticky=tk.W, pady=(5, 0))
+
+        # Difference B color
+        ttk.Label(settings_frame, text="Difference B:").grid(row=6, column=0, sticky=tk.W, pady=(5, 0))
+        self.color_diff_b_btn = tk.Button(settings_frame, text="   ",
+                                          bg=self.rgb_to_hex(self.color_diff_b),
+                                          command=lambda: self.choose_color('diff_b'),
+                                          width=3, relief=tk.RAISED, borderwidth=2)
+        self.color_diff_b_btn.grid(row=6, column=1, sticky=tk.W, padx=(0, 5), pady=(5, 0))
+        ttk.Label(settings_frame, text="(Pixels brighter in Image B)",
+                 font=('Arial', 8, 'italic')).grid(row=6, column=2, sticky=tk.W, pady=(5, 0))
 
         # Action buttons
         buttons_frame = ttk.Frame(main_frame)
@@ -245,6 +287,45 @@ class ImageDiffApp:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load image: {str(e)}")
 
+    def rgb_to_hex(self, rgb):
+        """Convert RGB tuple to hex color string"""
+        return f'#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}'
+
+    def hex_to_rgb(self, hex_color):
+        """Convert hex color string to RGB tuple"""
+        hex_color = hex_color.lstrip('#')
+        return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+    def choose_color(self, color_type):
+        """Open color chooser dialog"""
+        # Get current color
+        if color_type == 'identical':
+            current_color = self.rgb_to_hex(self.color_identical)
+        elif color_type == 'diff_a':
+            current_color = self.rgb_to_hex(self.color_diff_a)
+        else:  # diff_b
+            current_color = self.rgb_to_hex(self.color_diff_b)
+
+        # Open color chooser
+        color = colorchooser.askcolor(
+            color=current_color,
+            title=f"Choose color for {color_type.replace('_', ' ').title()}"
+        )
+
+        if color[1]:  # color[1] is the hex string
+            rgb = self.hex_to_rgb(color[1])
+
+            # Update color variable and button
+            if color_type == 'identical':
+                self.color_identical = rgb
+                self.color_identical_btn.config(bg=color[1])
+            elif color_type == 'diff_a':
+                self.color_diff_a = rgb
+                self.color_diff_a_btn.config(bg=color[1])
+            else:  # diff_b
+                self.color_diff_b = rgb
+                self.color_diff_b_btn.config(bg=color[1])
+
     def update_sensitivity_label(self, value):
         """Update sensitivity label when slider moves"""
         self.sensitivity_label.config(text=f"{int(float(value))}%")
@@ -328,35 +409,35 @@ class ImageDiffApp:
         # Create result image
         result = np.zeros_like(arr_a, dtype=np.uint8)
 
-        # Apply color coding:
-        # Yellow (255, 255, 0) = identical pixels
-        # Red (255, 0, 0) = different (from A perspective)
-        # Green (0, 255, 0) = different (from B perspective)
+        # Detect white pixels (pixels where all RGB values are >= 250 in both images)
+        white_threshold = 250
+        white_in_a = np.all(arr_a >= white_threshold, axis=2)
+        white_in_b = np.all(arr_b >= white_threshold, axis=2)
+        white_mask = white_in_a & white_in_b
 
         # Pixels where difference is below threshold (identical)
         identical_mask = diff_magnitude <= threshold
 
-        # For identical pixels: use yellow
-        result[identical_mask] = [255, 255, 0]
+        # For white pixels in both images: keep them white
+        result[white_mask] = [255, 255, 255]
+
+        # For identical non-white pixels: use custom color
+        identical_non_white_mask = identical_mask & ~white_mask
+        result[identical_non_white_mask] = list(self.color_identical)
 
         # For different pixels: determine if more from A or B
-        different_mask = ~identical_mask
-
-        # Simple approach: use red for differences
-        # (In a pixel-by-pixel comparison, "only in A" vs "only in B" doesn't have
-        # clear meaning - a pixel exists in both images but has different colors)
-        # We'll use red for pixels brighter in A, green for pixels brighter in B
+        different_mask = (~identical_mask) & (~white_mask)
 
         brightness_a = np.mean(arr_a, axis=2)
         brightness_b = np.mean(arr_b, axis=2)
 
-        # Red: brighter in A (or equal)
-        red_mask = different_mask & (brightness_a >= brightness_b)
-        result[red_mask] = [255, 0, 0]
+        # Difference A: brighter in A (or equal)
+        diff_a_mask = different_mask & (brightness_a >= brightness_b)
+        result[diff_a_mask] = list(self.color_diff_a)
 
-        # Green: brighter in B
-        green_mask = different_mask & (brightness_a < brightness_b)
-        result[green_mask] = [0, 255, 0]
+        # Difference B: brighter in B
+        diff_b_mask = different_mask & (brightness_a < brightness_b)
+        result[diff_b_mask] = list(self.color_diff_b)
 
         # Convert back to PIL Image
         result_img = Image.fromarray(result, mode='RGB')

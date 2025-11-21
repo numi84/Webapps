@@ -15,10 +15,12 @@ Ein einfaches Python-Tool zum Vergleich von zwei Bildern mit visueller Darstellu
   - WEBP
   - PDF (erste Seite)
 - **Einstellbare Empfindlichkeit** (0-100%, Standard: 80%)
-- **Farbcodierte Unterschiede:**
-  - 🟡 **Gelb**: Identische Pixel in beiden Bildern
-  - 🔴 **Rot**: Unterschiedliche Pixel (heller in Bild A)
-  - 🟢 **Grün**: Unterschiedliche Pixel (heller in Bild B)
+- **Anpassbare Farbcodierung:**
+  - 🟡 **Gelb** (Standard): Identische Pixel in beiden Bildern
+  - 🔴 **Rot** (Standard): Unterschiedliche Pixel (heller in Bild A)
+  - 🟢 **Grün** (Standard): Unterschiedliche Pixel (heller in Bild B)
+  - Alle drei Farben können über Color Picker individuell angepasst werden
+- **Intelligente Weiß-Erhaltung**: Weiße Pixel (RGB ≥ 250) bleiben im Vergleichsbild weiß
 - **Flexible Export-Optionen:**
   - PNG, JPEG, BMP, TIFF
   - JPEG-Qualität einstellbar (Standard: 90%)
@@ -78,10 +80,13 @@ python3 image_diff.py
    - **Methode 1:** Ziehe die Bilder per Drag & Drop in die entsprechenden Drop-Zonen (Image A / Image B)
    - **Methode 2:** Klicke auf "Browse..." und wähle die Bilder über den Datei-Dialog aus
 
-2. **Empfindlichkeit einstellen:**
-   - Bewege den Slider "Sensitivity" (0-100%)
-   - Höhere Werte = strengerer Vergleich (mehr Unterschiede werden erkannt)
-   - Standard: 80%
+2. **Einstellungen anpassen:**
+   - **Empfindlichkeit:** Bewege den Slider "Sensitivity" (0-100%, Standard: 80%)
+     - Höhere Werte = strengerer Vergleich (mehr Unterschiede werden erkannt)
+   - **Farben:** (Optional) Klicke auf die Farbfelder um die Farben anzupassen:
+     - **Identical**: Farbe für identische Pixel (Standard: Gelb)
+     - **Difference A**: Farbe für Unterschiede in Bild A (Standard: Rot)
+     - **Difference B**: Farbe für Unterschiede in Bild B (Standard: Grün)
 
 3. **Vergleich starten:**
    - Klicke auf "Compare Images"
@@ -110,11 +115,13 @@ Das Tool überprüft automatisch:
 
 1. Beide Bilder werden in RGB konvertiert
 2. Das größere Bild wird auf die Größe des kleineren herunterskaliert
-3. Pixel-für-Pixel Vergleich mit konfigurierbarer Toleranz
-4. Farbzuordnung basierend auf Unterschieden:
-   - **Gelb**: Differenz unter Schwellwert (identisch)
-   - **Rot**: Unterschied vorhanden, Pixel in Bild A heller
-   - **Grün**: Unterschied vorhanden, Pixel in Bild B heller
+3. Erkennung von weißen Pixeln (RGB ≥ 250 in beiden Bildern)
+4. Pixel-für-Pixel Vergleich mit konfigurierbarer Toleranz
+5. Farbzuordnung basierend auf Unterschieden:
+   - **Weiß**: Pixel ist in beiden Bildern weiß (bleiben erhalten)
+   - **Benutzerdefinierte Farbe** (Standard Gelb): Differenz unter Schwellwert (identisch)
+   - **Benutzerdefinierte Farbe** (Standard Rot): Unterschied vorhanden, Pixel in Bild A heller
+   - **Benutzerdefinierte Farbe** (Standard Grün): Unterschied vorhanden, Pixel in Bild B heller
 
 ### Empfindlichkeit
 
