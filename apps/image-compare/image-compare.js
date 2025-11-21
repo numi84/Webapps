@@ -18,6 +18,9 @@ class ImageCompare {
         this.animationFrameId = null;
         this.minimapUpdateTimeout = null;
 
+        // Display size setting
+        this.displaySize = 100; // percentage
+
         this.initElements();
         this.attachEventListeners();
     }
@@ -54,7 +57,14 @@ class ImageCompare {
         this.zoomInBtn = document.getElementById('zoomIn');
         this.zoomOutBtn = document.getElementById('zoomOut');
         this.zoomResetBtn = document.getElementById('zoomReset');
-        this.zoomValue = document.getElementById('zoomValue');
+        this.zoomInput = document.getElementById('zoomInput');
+
+        // Display size control
+        this.displaySizeSelect = document.getElementById('displaySize');
+
+        // Save buttons
+        this.saveDiffBtn = document.getElementById('saveDiff');
+        this.saveOverlayBtn = document.getElementById('saveOverlay');
 
         // Views
         this.resultsSection = document.getElementById('resultsSection');
@@ -92,6 +102,22 @@ class ImageCompare {
         this.zoomInBtn.addEventListener('click', () => this.handleZoom(0.2));
         this.zoomOutBtn.addEventListener('click', () => this.handleZoom(-0.2));
         this.zoomResetBtn.addEventListener('click', () => this.resetZoom());
+        this.zoomInput.addEventListener('change', (e) => this.handleZoomInput(e));
+        this.zoomInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.handleZoomInput(e);
+        });
+
+        // Display size control
+        this.displaySizeSelect.addEventListener('change', (e) => {
+            this.displaySize = parseInt(e.target.value);
+            if (this.imageA && this.imageB) {
+                this.compareImages();
+            }
+        });
+
+        // Save buttons
+        this.saveDiffBtn.addEventListener('click', () => this.saveDifference());
+        this.saveOverlayBtn.addEventListener('click', () => this.saveOverlay());
 
         // Mouse wheel zoom
         this.canvasContainers.forEach(container => {
@@ -226,12 +252,19 @@ class ImageCompare {
     compareImages() {
         if (!this.imageA || !this.imageB) return;
 
-        // Get dimensions
-        const width = Math.max(this.imageA.width, this.imageB.width);
-        const height = Math.max(this.imageA.height, this.imageB.height);
+        // Get dimensions based on display size setting
+        const originalWidth = Math.max(this.imageA.width, this.imageB.width);
+        const originalHeight = Math.max(this.imageA.height, this.imageB.height);
+
+        const scaleFactor = this.displaySize / 100;
+        const width = Math.round(originalWidth * scaleFactor);
+        const height = Math.round(originalHeight * scaleFactor);
 
         // Set canvas dimensions
         this.setCanvasDimensions(width, height);
+
+        // Update canvas containers for scrolling if needed
+        this.updateCanvasContainers();
 
         // Draw images
         this.drawImageOnCanvas(this.canvasA, this.imageA, width, height);
@@ -249,6 +282,16 @@ class ImageCompare {
 
         // Initialize minimaps
         this.updateMinimaps();
+    }
+
+    updateCanvasContainers() {
+        this.canvasContainers.forEach(container => {
+            if (this.displaySize < 100) {
+                container.classList.add('fit-content');
+            } else {
+                container.classList.remove('fit-content');
+            }
+        });
     }
 
     setCanvasDimensions(width, height) {
@@ -426,7 +469,7 @@ class ImageCompare {
 
     handleZoom(delta) {
         this.zoom = Math.max(0.5, Math.min(5, this.zoom + delta));
-        this.zoomValue.textContent = Math.round(this.zoom * 100);
+        this.updateZoomDisplay();
 
         // Use requestAnimationFrame for smooth updates
         if (this.animationFrameId) {
@@ -436,6 +479,20 @@ class ImageCompare {
             this.redrawAll();
             this.animationFrameId = null;
         });
+    }
+
+    handleZoomInput(e) {
+        let value = parseInt(e.target.value);
+        // Clamp value between 50% and 500%
+        value = Math.max(50, Math.min(500, value));
+        this.zoom = value / 100;
+        this.updateZoomDisplay();
+        this.redrawAll();
+    }
+
+    updateZoomDisplay() {
+        const percentage = Math.round(this.zoom * 100);
+        this.zoomInput.value = percentage;
     }
 
     handleWheelZoom(e) {
@@ -448,8 +505,75 @@ class ImageCompare {
         this.zoom = 1;
         this.panX = 0;
         this.panY = 0;
-        this.zoomValue.textContent = '100';
+        this.updateZoomDisplay();
         this.redrawAll();
+    }
+
+    saveDifference() {
+        if (!this.cachedDiffCanvas) {
+            alert('Bitte führen Sie zuerst einen Vergleich durch.');
+            return;
+        }
+
+        // Create a temporary canvas for the final image
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = this.cachedDiffCanvas.width;
+        finalCanvas.height = this.cachedDiffCanvas.height;
+        const ctx = finalCanvas.getContext('2d');
+
+        // Draw the difference image
+        ctx.drawImage(this.cachedDiffCanvas, 0, 0);
+
+        // Convert to blob and download
+        finalCanvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bildvergleich-unterschiede-${Date.now()}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    saveOverlay() {
+        if (!this.imageA || !this.imageB) {
+            alert('Bitte führen Sie zuerst einen Vergleich durch.');
+            return;
+        }
+
+        // Create a temporary canvas for the overlay
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = this.canvasOverlay.width;
+        finalCanvas.height = this.canvasOverlay.height;
+        const ctx = finalCanvas.getContext('2d');
+
+        // Recreate the overlay without zoom/pan
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+
+        const opacity = this.opacitySlider.value / 100;
+
+        // Draw image A
+        const xA = (finalCanvas.width - this.imageA.width) / 2;
+        const yA = (finalCanvas.height - this.imageA.height) / 2;
+        ctx.globalAlpha = 1 - opacity;
+        ctx.drawImage(this.imageA, xA, yA);
+
+        // Draw image B with opacity
+        const xB = (finalCanvas.width - this.imageB.width) / 2;
+        const yB = (finalCanvas.height - this.imageB.height) / 2;
+        ctx.globalAlpha = opacity;
+        ctx.drawImage(this.imageB, xB, yB);
+
+        // Convert to blob and download
+        finalCanvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bildvergleich-overlay-${Date.now()}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
     }
 
     startPan(e) {
@@ -589,7 +713,11 @@ class ImageCompare {
         this.zoom = 1;
         this.panX = 0;
         this.panY = 0;
-        this.zoomValue.textContent = '100';
+        this.updateZoomDisplay();
+
+        // Reset display size
+        this.displaySize = 100;
+        this.displaySizeSelect.value = '100';
 
         // Clear cached diff canvas
         this.cachedDiffCanvas = null;
@@ -614,6 +742,11 @@ class ImageCompare {
         [this.canvasA, this.canvasB, this.canvasOverlay, this.canvasDiff].forEach(canvas => {
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        // Remove canvas container classes
+        this.canvasContainers.forEach(container => {
+            container.classList.remove('fit-content');
         });
 
         // Hide minimaps

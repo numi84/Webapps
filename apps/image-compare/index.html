@@ -41,8 +41,23 @@
                     <label for="sensitivity">Empfindlichkeit: <span id="sensitivityValue">70</span></label>
                     <input type="range" id="sensitivity" min="0" max="100" value="70">
                 </div>
+                <div class="control-group">
+                    <label for="displaySize">Anzeigegröße:</label>
+                    <select id="displaySize" class="select-control">
+                        <option value="25">25%</option>
+                        <option value="33">33%</option>
+                        <option value="50">50%</option>
+                        <option value="66">66%</option>
+                        <option value="75">75%</option>
+                        <option value="100" selected>100%</option>
+                    </select>
+                </div>
                 <div class="control-group zoom-controls">
-                    <label>Zoom: <span id="zoomValue">100</span>%</label>
+                    <label for="zoomInput">Zoom:</label>
+                    <div class="zoom-input-group">
+                        <input type="number" id="zoomInput" min="50" max="500" value="100" class="zoom-input">
+                        <span>%</span>
+                    </div>
                     <div class="zoom-buttons">
                         <button id="zoomOut" class="btn-zoom" title="Verkleinern">−</button>
                         <button id="zoomReset" class="btn-zoom" title="Zurücksetzen">⟲</button>
@@ -89,6 +104,7 @@
                             <div class="overlay-controls">
                                 <label>Transparenz: <span id="opacityValue">50</span>%</label>
                                 <input type="range" id="opacity" min="0" max="100" value="50">
+                                <button id="saveOverlay" class="btn-save">💾 Überlagerung speichern</button>
                             </div>
                         </div>
                     </div>
@@ -101,7 +117,9 @@
                                 <canvas id="canvasDiff"></canvas>
                                 <canvas class="minimap" id="minimapDiff"></canvas>
                             </div>
-                            <div class="stats" id="diffStats"></div>
+                            <div class="stats" id="diffStats">
+                                <button id="saveDiff" class="btn-save">💾 Unterschiede speichern</button>
+                            </div>
                         </div>
                     </div>
                 </div>

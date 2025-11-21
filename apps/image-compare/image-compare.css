@@ -179,6 +179,47 @@ main {
     width: 200px;
 }
 
+.select-control {
+    padding: 8px 12px;
+    border: 2px solid #667eea;
+    border-radius: 6px;
+    background: white;
+    color: #667eea;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.select-control:hover {
+    background: #f8f9ff;
+}
+
+.zoom-input-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.zoom-input {
+    width: 70px;
+    padding: 6px 8px;
+    border: 2px solid #667eea;
+    border-radius: 6px;
+    background: white;
+    color: #667eea;
+    font-size: 1em;
+    font-weight: 600;
+    text-align: center;
+}
+
+.zoom-input:focus {
+    outline: none;
+    border-color: #764ba2;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
 .btn-primary, .btn-secondary {
     padding: 12px 30px;
     border: none;
@@ -211,6 +252,24 @@ main {
 
 .btn-secondary:hover {
     background: #d0d0d0;
+}
+
+.btn-save {
+    padding: 10px 20px;
+    margin-top: 15px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-save:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
 }
 
 /* Results Section */
@@ -291,7 +350,7 @@ main {
 .canvas-container {
     position: relative;
     display: inline-block;
-    overflow: hidden;
+    overflow: auto;
     border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     background: white;
@@ -300,17 +359,24 @@ main {
     cursor: grab;
 }
 
+.canvas-container.has-scroll {
+    overflow: auto;
+}
+
 .canvas-container:active {
     cursor: grabbing;
 }
 
 canvas {
     display: block;
-    width: 100%;
-    max-height: 75vh;
-    height: auto;
     background: white;
-    object-fit: contain;
+}
+
+.canvas-container.fit-content canvas {
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
 }
 
 .minimap {
