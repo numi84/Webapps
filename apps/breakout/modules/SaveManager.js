@@ -271,10 +271,73 @@ export class SaveManager {
     decodeLevelCode(code) {
         try {
             const json = atob(code);
-            return JSON.parse(json);
+            const level = JSON.parse(json);
+
+            // Validate the decoded level structure
+            if (!this.validateLevelStructure(level)) {
+                console.error('Invalid level structure');
+                return null;
+            }
+
+            return level;
         } catch (error) {
             console.error('Error decoding level:', error);
             return null;
         }
+    }
+
+    /**
+     * Validate that a level object has the required structure.
+     * Prevents potential issues from malformed or malicious level data.
+     */
+    validateLevelStructure(level) {
+        // Must be an object
+        if (!level || typeof level !== 'object') {
+            return false;
+        }
+
+        // Must have blocks array
+        if (!Array.isArray(level.blocks)) {
+            return false;
+        }
+
+        // Validate each block has required properties
+        const validBlockTypes = ['standard', 'hard', 'unbreakable', 'explosive', 'moving', 'invisible', 'regenerating', 'multiHit'];
+
+        for (const block of level.blocks) {
+            if (typeof block !== 'object') return false;
+            if (typeof block.col !== 'number' || block.col < 0 || block.col > 15) return false;
+            if (typeof block.row !== 'number' || block.row < 0 || block.row > 20) return false;
+            if (block.type && !validBlockTypes.includes(block.type)) return false;
+        }
+
+        // If powerups exist, validate them
+        if (level.powerups) {
+            if (!Array.isArray(level.powerups)) {
+                return false;
+            }
+
+            for (const powerup of level.powerups) {
+                if (typeof powerup !== 'object') return false;
+                if (typeof powerup.col !== 'number' || powerup.col < 0 || powerup.col > 15) return false;
+                if (typeof powerup.row !== 'number' || powerup.row < 0 || powerup.row > 20) return false;
+            }
+        }
+
+        // Validate name length if present (prevent XSS via extremely long strings)
+        if (level.name && (typeof level.name !== 'string' || level.name.length > 100)) {
+            return false;
+        }
+
+        if (level.description && (typeof level.description !== 'string' || level.description.length > 500)) {
+            return false;
+        }
+
+        // Valid difficulty values
+        if (level.difficulty && !['easy', 'medium', 'hard'].includes(level.difficulty)) {
+            return false;
+        }
+
+        return true;
     }
 }

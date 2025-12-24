@@ -71,6 +71,9 @@ export class ParticleSystem {
         for (let i = 0; i < maxParticles; i++) {
             this.particles.push(new Particle());
         }
+
+        // Track next likely inactive particle index for O(1) average case
+        this.nextInactiveHint = 0;
     }
 
     emit(x, y, count, config = {}) {
@@ -161,7 +164,19 @@ export class ParticleSystem {
     }
 
     getInactiveParticle() {
-        return this.particles.find(p => !p.active);
+        // Start from hint index for O(1) average case
+        const len = this.particles.length;
+
+        for (let i = 0; i < len; i++) {
+            const idx = (this.nextInactiveHint + i) % len;
+            if (!this.particles[idx].active) {
+                // Update hint for next search
+                this.nextInactiveHint = (idx + 1) % len;
+                return this.particles[idx];
+            }
+        }
+
+        return null; // No inactive particles available
     }
 
     update(deltaTime) {

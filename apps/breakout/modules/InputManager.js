@@ -14,26 +14,28 @@ export class InputManager {
         };
         this.actions = {};
 
+        // Store bound handlers for cleanup
+        this.boundHandlers = {};
+
         this.setupListeners();
     }
 
     setupListeners() {
-        // Keyboard
-        window.addEventListener('keydown', (e) => {
+        // Create bound handlers that can be removed later
+        this.boundHandlers.keydown = (e) => {
             this.keys[e.code] = true;
 
             // Prevent default for game keys
             if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'].includes(e.code)) {
                 e.preventDefault();
             }
-        });
+        };
 
-        window.addEventListener('keyup', (e) => {
+        this.boundHandlers.keyup = (e) => {
             this.keys[e.code] = false;
-        });
+        };
 
-        // Mouse
-        this.canvas.addEventListener('mousemove', (e) => {
+        this.boundHandlers.mousemove = (e) => {
             const rect = this.canvas.getBoundingClientRect();
             const scaleX = this.canvas.width / rect.width;
             const scaleY = this.canvas.height / rect.height;
@@ -41,43 +43,58 @@ export class InputManager {
             this.mouse.x = (e.clientX - rect.left) * scaleX;
             this.mouse.y = (e.clientY - rect.top) * scaleY;
             this.mouse.active = true;
-        });
+        };
 
-        this.canvas.addEventListener('mouseleave', () => {
+        this.boundHandlers.mouseleave = () => {
             this.mouse.active = false;
-        });
+        };
 
-        this.canvas.addEventListener('click', (e) => {
+        this.boundHandlers.click = (e) => {
             if (this.actions.onClick) {
                 this.actions.onClick(e);
             }
-        });
+        };
 
-        // Touch
-        this.canvas.addEventListener('touchstart', (e) => {
+        this.boundHandlers.touchstart = (e) => {
             e.preventDefault();
             this.handleTouch(e.touches[0]);
             if (this.actions.onTouchStart) {
                 this.actions.onTouchStart(e);
             }
-        });
+        };
 
-        this.canvas.addEventListener('touchmove', (e) => {
+        this.boundHandlers.touchmove = (e) => {
             e.preventDefault();
             this.handleTouch(e.touches[0]);
-        });
+        };
 
-        this.canvas.addEventListener('touchend', (e) => {
+        this.boundHandlers.touchend = (e) => {
             e.preventDefault();
             this.touch.active = false;
+            // Reset mouse.active when touch ends to prevent stale input state
+            this.mouse.active = false;
             if (this.actions.onTouchEnd) {
                 this.actions.onTouchEnd(e);
             }
-        });
+        };
 
-        this.canvas.addEventListener('touchcancel', () => {
+        this.boundHandlers.touchcancel = () => {
             this.touch.active = false;
-        });
+            this.mouse.active = false;
+        };
+
+        // Add event listeners
+        window.addEventListener('keydown', this.boundHandlers.keydown);
+        window.addEventListener('keyup', this.boundHandlers.keyup);
+
+        this.canvas.addEventListener('mousemove', this.boundHandlers.mousemove);
+        this.canvas.addEventListener('mouseleave', this.boundHandlers.mouseleave);
+        this.canvas.addEventListener('click', this.boundHandlers.click);
+
+        this.canvas.addEventListener('touchstart', this.boundHandlers.touchstart, { passive: false });
+        this.canvas.addEventListener('touchmove', this.boundHandlers.touchmove, { passive: false });
+        this.canvas.addEventListener('touchend', this.boundHandlers.touchend, { passive: false });
+        this.canvas.addEventListener('touchcancel', this.boundHandlers.touchcancel);
     }
 
     handleTouch(touch) {
@@ -107,5 +124,27 @@ export class InputManager {
         this.keys = {};
         this.mouse.active = false;
         this.touch.active = false;
+    }
+
+    /**
+     * Remove all event listeners to prevent memory leaks.
+     * Call this when the game is destroyed or the page is unloaded.
+     */
+    destroy() {
+        window.removeEventListener('keydown', this.boundHandlers.keydown);
+        window.removeEventListener('keyup', this.boundHandlers.keyup);
+
+        this.canvas.removeEventListener('mousemove', this.boundHandlers.mousemove);
+        this.canvas.removeEventListener('mouseleave', this.boundHandlers.mouseleave);
+        this.canvas.removeEventListener('click', this.boundHandlers.click);
+
+        this.canvas.removeEventListener('touchstart', this.boundHandlers.touchstart);
+        this.canvas.removeEventListener('touchmove', this.boundHandlers.touchmove);
+        this.canvas.removeEventListener('touchend', this.boundHandlers.touchend);
+        this.canvas.removeEventListener('touchcancel', this.boundHandlers.touchcancel);
+
+        this.boundHandlers = {};
+        this.actions = {};
+        this.reset();
     }
 }

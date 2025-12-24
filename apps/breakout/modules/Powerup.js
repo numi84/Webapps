@@ -195,8 +195,11 @@ export class Powerup {
                 break;
 
             case PowerupType.SLOW_MOTION:
-                game.balls.forEach(ball => ball.setSpeed(ball.speed * config.speedMultiplier));
-                this.originalSpeed = game.balls[0].speed / config.speedMultiplier;
+                // Store original speed before modification to restore correctly
+                if (game.balls.length > 0) {
+                    this.originalSpeed = game.balls[0].speed;
+                    game.balls.forEach(ball => ball.setSpeed(ball.speed * config.speedMultiplier));
+                }
                 break;
 
             case PowerupType.STICKY_PADDLE:
