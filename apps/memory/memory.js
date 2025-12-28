@@ -15,13 +15,13 @@ let gameState = {
 const symbols = ['🍎', '🍊', '🍋', '🍌', '🍇', '🍓', '🍒', '🍑', '🥝', '🍍', '🥥', '🥭'];
 
 // DOM Elements
-const gameBoard = document.getElementById('game-board');
-const movesEl = document.getElementById('moves');
-const pairsEl = document.getElementById('pairs');
-const timerEl = document.getElementById('timer');
-const newGameBtn = document.getElementById('new-game-btn');
-const winMessage = document.getElementById('win-message');
-const difficultyButtons = document.querySelectorAll('.diff-btn');
+let gameBoard;
+let movesEl;
+let pairsEl;
+let timerEl;
+let newGameBtn;
+let winMessage;
+let difficultyButtons;
 
 // Initialize Game
 function initGame() {
@@ -41,15 +41,24 @@ function initGame() {
     hideWinMessage();
 }
 
+// Fisher-Yates Shuffle Algorithm
+function shuffleArray(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
 // Create Cards
 function createCards() {
     const selectedSymbols = symbols.slice(0, gameState.pairs);
     const cardPairs = [...selectedSymbols, ...selectedSymbols];
 
-    // Shuffle cards
-    gameState.cards = cardPairs
-        .map((symbol, index) => ({ symbol, id: index }))
-        .sort(() => Math.random() - 0.5);
+    // Shuffle cards using Fisher-Yates algorithm for uniform randomness
+    const shuffled = shuffleArray(cardPairs);
+    gameState.cards = shuffled.map((symbol, index) => ({ symbol, id: index }));
 }
 
 // Render Board
@@ -150,9 +159,10 @@ function winGame() {
     clearInterval(gameState.timerInterval);
     showWinMessage();
 
-    setTimeout(() => {
-        alert(`Glückwunsch!\n\nZüge: ${gameState.moves}\nZeit: ${gameState.timer}s`);
-    }, 500);
+    // Win message is already visible in HTML - no blocking alert needed
+    // setTimeout(() => {
+    //     alert(`Glückwunsch!\n\nZüge: ${gameState.moves}\nZeit: ${gameState.timer}s`);
+    // }, 500);
 }
 
 // Show/Hide Win Message
@@ -179,18 +189,33 @@ function startTimer() {
     }, 1000);
 }
 
-// Event Listeners
-newGameBtn.addEventListener('click', initGame);
+// Initialize Application
+function init() {
+    // Get DOM Elements
+    gameBoard = document.getElementById('game-board');
+    movesEl = document.getElementById('moves');
+    pairsEl = document.getElementById('pairs');
+    timerEl = document.getElementById('timer');
+    newGameBtn = document.getElementById('new-game-btn');
+    winMessage = document.getElementById('win-message');
+    difficultyButtons = document.querySelectorAll('.diff-btn');
 
-difficultyButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-        difficultyButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    // Event Listeners
+    newGameBtn.addEventListener('click', initGame);
 
-        gameState.pairs = parseInt(btn.dataset.pairs);
-        initGame();
+    difficultyButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            difficultyButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            gameState.pairs = parseInt(btn.dataset.pairs);
+            initGame();
+        });
     });
-});
 
-// Initialize
-initGame();
+    // Initialize game
+    initGame();
+}
+
+// Start application when DOM is ready
+document.addEventListener('DOMContentLoaded', init);

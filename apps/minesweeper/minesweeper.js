@@ -21,13 +21,13 @@ const difficulties = {
 };
 
 // DOM Elements
-const gameBoard = document.getElementById('game-board');
-const minesCount = document.getElementById('mines-count');
-const flagsCount = document.getElementById('flags-count');
-const timerDisplay = document.getElementById('timer');
-const resetBtn = document.getElementById('reset-btn');
-const gameMessage = document.getElementById('game-message');
-const difficultyButtons = document.querySelectorAll('.diff-btn');
+let gameBoard;
+let minesCount;
+let flagsCount;
+let timerDisplay;
+let resetBtn;
+let gameMessage;
+let difficultyButtons;
 
 // Initialize Game
 function initGame() {
@@ -132,9 +132,6 @@ function renderBoard() {
             cell.className = 'cell';
             cell.dataset.row = row;
             cell.dataset.col = col;
-
-            cell.addEventListener('click', () => handleLeftClick(row, col));
-            cell.addEventListener('contextmenu', (e) => handleRightClick(e, row, col));
 
             gameBoard.appendChild(cell);
         }
@@ -301,26 +298,59 @@ function startTimer() {
     }, 1000);
 }
 
-// Reset Game
-resetBtn.addEventListener('click', initGame);
+// Initialize Application
+function init() {
+    // Get DOM Elements
+    gameBoard = document.getElementById('game-board');
+    minesCount = document.getElementById('mines-count');
+    flagsCount = document.getElementById('flags-count');
+    timerDisplay = document.getElementById('timer');
+    resetBtn = document.getElementById('reset-btn');
+    gameMessage = document.getElementById('game-message');
+    difficultyButtons = document.querySelectorAll('.diff-btn');
 
-// Difficulty Selection
-difficultyButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-        // Update active button
-        difficultyButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    // Event Listeners - Event Delegation for game board
+    gameBoard.addEventListener('click', (e) => {
+        const cell = e.target.closest('.cell');
+        if (!cell) return;
 
-        // Set difficulty
-        const difficulty = btn.dataset.difficulty;
-        gameState.rows = difficulties[difficulty].rows;
-        gameState.cols = difficulties[difficulty].cols;
-        gameState.mines = difficulties[difficulty].mines;
-
-        // Start new game
-        initGame();
+        const row = parseInt(cell.dataset.row);
+        const col = parseInt(cell.dataset.col);
+        handleLeftClick(row, col);
     });
-});
 
-// Initialize game on load
-initGame();
+    gameBoard.addEventListener('contextmenu', (e) => {
+        const cell = e.target.closest('.cell');
+        if (!cell) return;
+
+        e.preventDefault();
+        const row = parseInt(cell.dataset.row);
+        const col = parseInt(cell.dataset.col);
+        handleRightClick(e, row, col);
+    });
+
+    resetBtn.addEventListener('click', initGame);
+
+    difficultyButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Update active button
+            difficultyButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Set difficulty
+            const difficulty = btn.dataset.difficulty;
+            gameState.rows = difficulties[difficulty].rows;
+            gameState.cols = difficulties[difficulty].cols;
+            gameState.mines = difficulties[difficulty].mines;
+
+            // Start new game
+            initGame();
+        });
+    });
+
+    // Initialize game
+    initGame();
+}
+
+// Start application when DOM is ready
+document.addEventListener('DOMContentLoaded', init);

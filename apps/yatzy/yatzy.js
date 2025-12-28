@@ -9,13 +9,13 @@ let gameState = {
 };
 
 // DOM Elements
-const diceElements = document.querySelectorAll('.dice');
-const rollBtn = document.getElementById('roll-btn');
-const rollsLeftEl = document.getElementById('rolls-left');
-const totalScoreEl = document.getElementById('total-score');
-const bonusScoreEl = document.getElementById('bonus-score');
-const newGameBtn = document.getElementById('new-game-btn');
-const scoreRows = document.querySelectorAll('.score-row[data-category]');
+let diceElements;
+let rollBtn;
+let rollsLeftEl;
+let totalScoreEl;
+let bonusScoreEl;
+let newGameBtn;
+let scoreRows;
 
 // Initialize Game
 function initGame() {
@@ -220,27 +220,43 @@ function endGame() {
     gameState.gameOver = true;
     rollBtn.disabled = true;
 
-    const total = parseInt(totalScoreEl.textContent);
-    setTimeout(() => {
-        alert(`Spiel beendet!\n\nDeine Gesamtpunktzahl: ${total} Punkte\n\nGut gespielt!`);
-    }, 300);
+    // Game end is clear from the disabled state and completed scorecard - no blocking alert needed
+    // const total = parseInt(totalScoreEl.textContent);
+    // setTimeout(() => {
+    //     alert(`Spiel beendet!\n\nDeine Gesamtpunktzahl: ${total} Punkte\n\nGut gespielt!`);
+    // }, 300);
 }
 
-// Event Listeners
-rollBtn.addEventListener('click', rollDice);
+// Initialize Application
+function init() {
+    // Get DOM Elements
+    diceElements = document.querySelectorAll('.dice');
+    rollBtn = document.getElementById('roll-btn');
+    rollsLeftEl = document.getElementById('rolls-left');
+    totalScoreEl = document.getElementById('total-score');
+    bonusScoreEl = document.getElementById('bonus-score');
+    newGameBtn = document.getElementById('new-game-btn');
+    scoreRows = document.querySelectorAll('.score-row[data-category]');
 
-diceElements.forEach((diceEl, index) => {
-    const holdBtn = diceEl.querySelector('.hold-btn');
-    holdBtn.addEventListener('click', () => toggleHold(index));
-});
+    // Event Listeners
+    rollBtn.addEventListener('click', rollDice);
 
-scoreRows.forEach(row => {
-    const selectBtn = row.querySelector('.select-btn');
-    const category = row.dataset.category;
-    selectBtn.addEventListener('click', () => selectCategory(category));
-});
+    diceElements.forEach((diceEl, index) => {
+        const holdBtn = diceEl.querySelector('.hold-btn');
+        holdBtn.addEventListener('click', () => toggleHold(index));
+    });
 
-newGameBtn.addEventListener('click', initGame);
+    scoreRows.forEach(row => {
+        const selectBtn = row.querySelector('.select-btn');
+        const category = row.dataset.category;
+        selectBtn.addEventListener('click', () => selectCategory(category));
+    });
 
-// Initialize
-initGame();
+    newGameBtn.addEventListener('click', initGame);
+
+    // Initialize game
+    initGame();
+}
+
+// Start application when DOM is ready
+document.addEventListener('DOMContentLoaded', init);

@@ -1,10 +1,6 @@
 // Canvas Setup
-const canvas = document.getElementById('drawing-canvas');
-const ctx = canvas.getContext('2d');
-
-// Set canvas size
-canvas.width = 800;
-canvas.height = 600;
+let canvas;
+let ctx;
 
 // State
 let isDrawing = false;
@@ -15,15 +11,15 @@ let lastX = 0;
 let lastY = 0;
 
 // DOM Elements
-const toolButtons = document.querySelectorAll('.tool-btn');
-const colorPicker = document.getElementById('color-picker');
-const colorPresets = document.querySelectorAll('.color-preset');
-const sizeSlider = document.getElementById('size-slider');
-const sizeValue = document.getElementById('size-value');
-const importBtn = document.getElementById('import-btn');
-const imageInput = document.getElementById('image-input');
-const clearBtn = document.getElementById('clear-btn');
-const saveBtn = document.getElementById('save-btn');
+let toolButtons;
+let colorPicker;
+let colorPresets;
+let sizeSlider;
+let sizeValue;
+let importBtn;
+let imageInput;
+let clearBtn;
+let saveBtn;
 
 // Initialize canvas with white background
 function initCanvas() {
@@ -37,9 +33,13 @@ function getPosition(e) {
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
+    // Account for canvas scaling
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
     return {
-        x: clientX - rect.left,
-        y: clientY - rect.top
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
     };
 }
 
@@ -151,47 +151,70 @@ function handleImageUpload(e) {
     reader.readAsDataURL(file);
 }
 
-// Event Listeners - Mouse
-canvas.addEventListener('mousedown', startDrawing);
-canvas.addEventListener('mousemove', draw);
-canvas.addEventListener('mouseup', stopDrawing);
-canvas.addEventListener('mouseout', stopDrawing);
+// Initialize Application
+function init() {
+    // Get DOM Elements
+    canvas = document.getElementById('drawing-canvas');
+    ctx = canvas.getContext('2d');
+    toolButtons = document.querySelectorAll('.tool-btn');
+    colorPicker = document.getElementById('color-picker');
+    colorPresets = document.querySelectorAll('.color-preset');
+    sizeSlider = document.getElementById('size-slider');
+    sizeValue = document.getElementById('size-value');
+    importBtn = document.getElementById('import-btn');
+    imageInput = document.getElementById('image-input');
+    clearBtn = document.getElementById('clear-btn');
+    saveBtn = document.getElementById('save-btn');
 
-// Event Listeners - Touch
-canvas.addEventListener('touchstart', startDrawing);
-canvas.addEventListener('touchmove', draw);
-canvas.addEventListener('touchend', stopDrawing);
-canvas.addEventListener('touchcancel', stopDrawing);
+    // Set canvas size
+    canvas.width = 800;
+    canvas.height = 600;
 
-// Tool Selection
-toolButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-        setTool(btn.dataset.tool);
+    // Event Listeners - Mouse
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+
+    // Event Listeners - Touch
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchcancel', stopDrawing);
+
+    // Tool Selection
+    toolButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            setTool(btn.dataset.tool);
+        });
     });
-});
 
-// Color Picker
-colorPicker.addEventListener('input', (e) => {
-    setColor(e.target.value);
-});
-
-// Color Presets
-colorPresets.forEach(preset => {
-    preset.addEventListener('click', () => {
-        setColor(preset.dataset.color);
+    // Color Picker
+    colorPicker.addEventListener('input', (e) => {
+        setColor(e.target.value);
     });
-});
 
-// Size Slider
-sizeSlider.addEventListener('input', (e) => {
-    setSize(e.target.value);
-});
+    // Color Presets
+    colorPresets.forEach(preset => {
+        preset.addEventListener('click', () => {
+            setColor(preset.dataset.color);
+        });
+    });
 
-// Buttons
-importBtn.addEventListener('click', importImage);
-imageInput.addEventListener('change', handleImageUpload);
-clearBtn.addEventListener('click', clearCanvas);
-saveBtn.addEventListener('click', saveDrawing);
+    // Size Slider
+    sizeSlider.addEventListener('input', (e) => {
+        setSize(e.target.value);
+    });
 
-// Initialize
-initCanvas();
+    // Buttons
+    importBtn.addEventListener('click', importImage);
+    imageInput.addEventListener('change', handleImageUpload);
+    clearBtn.addEventListener('click', clearCanvas);
+    saveBtn.addEventListener('click', saveDrawing);
+
+    // Initialize canvas
+    initCanvas();
+}
+
+// Start application when DOM is ready
+document.addEventListener('DOMContentLoaded', init);

@@ -17,6 +17,7 @@ class ImageCompare {
         this.cachedDiffCanvas = null;
         this.animationFrameId = null;
         this.minimapUpdateTimeout = null;
+        this.sensitivityDebounce = null; // Debounce timer for sensitivity slider
 
         this.initElements();
         this.attachEventListeners();
@@ -69,9 +70,16 @@ class ImageCompare {
         this.sensitivitySlider.addEventListener('input', (e) => {
             this.sensitivity = parseInt(e.target.value);
             this.sensitivityValue.textContent = this.sensitivity;
-            if (this.diffData) {
-                this.compareImages();
+
+            // Debounce the expensive comparison operation
+            if (this.sensitivityDebounce) {
+                clearTimeout(this.sensitivityDebounce);
             }
+            this.sensitivityDebounce = setTimeout(() => {
+                if (this.diffData) {
+                    this.compareImages();
+                }
+            }, 150); // Wait 150ms after user stops moving slider
         });
 
         this.opacitySlider.addEventListener('input', (e) => {
@@ -141,6 +149,13 @@ class ImageCompare {
     }
 
     async handlePdfUpload(file, imageId, inputElement) {
+        // Check if PDF.js library is loaded
+        if (typeof pdfjsLib === 'undefined') {
+            alert('PDF-Unterstützung ist nicht verfügbar. Bitte laden Sie die Seite neu.');
+            console.error('pdfjsLib is not loaded');
+            return;
+        }
+
         try {
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -183,6 +198,13 @@ class ImageCompare {
     }
 
     async handleTiffUpload(file, imageId, inputElement) {
+        // Check if Tiff.js library is loaded
+        if (typeof Tiff === 'undefined') {
+            alert('TIFF-Unterstützung ist nicht verfügbar. Bitte laden Sie die Seite neu.');
+            console.error('Tiff is not loaded');
+            return;
+        }
+
         try {
             const arrayBuffer = await file.arrayBuffer();
 
@@ -551,6 +573,9 @@ class ImageCompare {
     }
 
     drawMinimap(minimap, sourceCanvas) {
+        // Guard against division by zero
+        if (this.zoom === 0) return;
+
         const maxSize = 150;
         const aspect = sourceCanvas.width / sourceCanvas.height;
 

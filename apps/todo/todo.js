@@ -3,30 +3,40 @@ let todos = [];
 let currentFilter = 'all';
 
 // DOM Elements
-const todoInput = document.getElementById('todo-input');
-const addBtn = document.getElementById('add-btn');
-const todoList = document.getElementById('todo-list');
-const totalCountEl = document.getElementById('total-count');
-const activeCountEl = document.getElementById('active-count');
-const completedCountEl = document.getElementById('completed-count');
-const filterButtons = document.querySelectorAll('.filter-btn');
-const clearCompletedBtn = document.getElementById('clear-completed-btn');
-const clearAllBtn = document.getElementById('clear-all-btn');
-const exportBtn = document.getElementById('export-btn');
-const importBtn = document.getElementById('import-btn');
-const importFileInput = document.getElementById('import-file-input');
+let todoInput;
+let addBtn;
+let todoList;
+let totalCountEl;
+let activeCountEl;
+let completedCountEl;
+let filterButtons;
+let clearCompletedBtn;
+let clearAllBtn;
+let exportBtn;
+let importBtn;
+let importFileInput;
 
 // Load todos from LocalStorage
 function loadTodos() {
-    const stored = localStorage.getItem('todos');
-    if (stored) {
-        todos = JSON.parse(stored);
+    try {
+        const stored = localStorage.getItem('todos');
+        if (stored) {
+            todos = JSON.parse(stored);
+        }
+    } catch (error) {
+        console.error('localStorage read error:', error);
+        // Fallback auf leeres Array (todos bleibt [])
     }
 }
 
 // Save todos to LocalStorage
 function saveTodos() {
-    localStorage.setItem('todos', JSON.stringify(todos));
+    try {
+        localStorage.setItem('todos', JSON.stringify(todos));
+    } catch (error) {
+        console.error('localStorage write error:', error);
+        // Todos werden nicht persistiert, aber App funktioniert weiter
+    }
 }
 
 // Add Todo
@@ -35,7 +45,7 @@ function addTodo() {
     if (!text) return;
 
     const todo = {
-        id: Date.now(),
+        id: Date.now() + Math.random(),
         text: text,
         completed: false,
         createdAt: new Date().toLocaleString('de-DE')
@@ -235,27 +245,47 @@ function handleFileImport(event) {
     reader.readAsText(file);
 }
 
-// Event Listeners
-addBtn.addEventListener('click', addTodo);
+// Initialize Application
+function init() {
+    // Get DOM Elements
+    todoInput = document.getElementById('todo-input');
+    addBtn = document.getElementById('add-btn');
+    todoList = document.getElementById('todo-list');
+    totalCountEl = document.getElementById('total-count');
+    activeCountEl = document.getElementById('active-count');
+    completedCountEl = document.getElementById('completed-count');
+    filterButtons = document.querySelectorAll('.filter-btn');
+    clearCompletedBtn = document.getElementById('clear-completed-btn');
+    clearAllBtn = document.getElementById('clear-all-btn');
+    exportBtn = document.getElementById('export-btn');
+    importBtn = document.getElementById('import-btn');
+    importFileInput = document.getElementById('import-file-input');
 
-todoInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        addTodo();
-    }
-});
+    // Event Listeners
+    addBtn.addEventListener('click', addTodo);
 
-filterButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-        setFilter(btn.dataset.filter);
+    todoInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            addTodo();
+        }
     });
-});
 
-clearCompletedBtn.addEventListener('click', clearCompleted);
-clearAllBtn.addEventListener('click', clearAll);
-exportBtn.addEventListener('click', exportTodos);
-importBtn.addEventListener('click', importTodos);
-importFileInput.addEventListener('change', handleFileImport);
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            setFilter(btn.dataset.filter);
+        });
+    });
 
-// Initialize
-loadTodos();
-renderTodos();
+    clearCompletedBtn.addEventListener('click', clearCompleted);
+    clearAllBtn.addEventListener('click', clearAll);
+    exportBtn.addEventListener('click', exportTodos);
+    importBtn.addEventListener('click', importTodos);
+    importFileInput.addEventListener('change', handleFileImport);
+
+    // Initialize application
+    loadTodos();
+    renderTodos();
+}
+
+// Start application when DOM is ready
+document.addEventListener('DOMContentLoaded', init);

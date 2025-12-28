@@ -4,6 +4,7 @@ let timeLeft = 25 * 60; // seconds
 let totalTime = 25 * 60;
 let isRunning = false;
 let currentMode = 'work';
+let audioContext = null; // Reusable AudioContext to prevent memory leaks
 
 // Settings
 let settings = {
@@ -18,48 +19,58 @@ let settings = {
 };
 
 // DOM Elements
-const timeLeftEl = document.getElementById('time-left');
-const modeLabelEl = document.getElementById('mode-label');
-const startBtn = document.getElementById('start-btn');
-const pauseBtn = document.getElementById('pause-btn');
-const resetBtn = document.getElementById('reset-btn');
-const modeButtons = document.querySelectorAll('.mode-btn');
-const progressCircle = document.getElementById('progress-ring-circle');
-const pomodorsTodayEl = document.getElementById('pomodoros-today');
-const pomodorsTotalEl = document.getElementById('pomodoros-total');
+let timeLeftEl;
+let modeLabelEl;
+let startBtn;
+let pauseBtn;
+let resetBtn;
+let modeButtons;
+let progressCircle;
+let pomodorsTodayEl;
+let pomodorsTotalEl;
 
 // Settings inputs
-const workDurationInput = document.getElementById('work-duration');
-const shortBreakInput = document.getElementById('short-break-duration');
-const longBreakInput = document.getElementById('long-break-duration');
-const autoStartInput = document.getElementById('auto-start');
-const soundEnabledInput = document.getElementById('sound-enabled');
+let workDurationInput;
+let shortBreakInput;
+let longBreakInput;
+let autoStartInput;
+let soundEnabledInput;
 
 // Load Settings
 function loadSettings() {
-    const stored = localStorage.getItem('pomodoro-settings');
-    if (stored) {
-        settings = { ...settings, ...JSON.parse(stored) };
+    try {
+        const stored = localStorage.getItem('pomodoro-settings');
+        if (stored) {
+            settings = { ...settings, ...JSON.parse(stored) };
 
-        // Reset daily counter if new day
-        if (settings.lastDate !== new Date().toDateString()) {
-            settings.pomodorosToday = 0;
-            settings.lastDate = new Date().toDateString();
+            // Reset daily counter if new day
+            if (settings.lastDate !== new Date().toDateString()) {
+                settings.pomodorosToday = 0;
+                settings.lastDate = new Date().toDateString();
+            }
+
+            workDurationInput.value = settings.workDuration;
+            shortBreakInput.value = settings.shortBreakDuration;
+            longBreakInput.value = settings.longBreakDuration;
+            autoStartInput.checked = settings.autoStart;
+            soundEnabledInput.checked = settings.soundEnabled;
+
+            updateStats();
         }
-
-        workDurationInput.value = settings.workDuration;
-        shortBreakInput.value = settings.shortBreakDuration;
-        longBreakInput.value = settings.longBreakDuration;
-        autoStartInput.checked = settings.autoStart;
-        soundEnabledInput.checked = settings.soundEnabled;
-
-        updateStats();
+    } catch (error) {
+        console.error('localStorage read error:', error);
+        // Fallback auf Default-Settings (bereits initialisiert)
     }
 }
 
 // Save Settings
 function saveSettings() {
-    localStorage.setItem('pomodoro-settings', JSON.stringify(settings));
+    try {
+        localStorage.setItem('pomodoro-settings', JSON.stringify(settings));
+    } catch (error) {
+        console.error('localStorage write error:', error);
+        // Settings werden nicht persistiert, aber App funktioniert weiter
+    }
 }
 
 // Update Stats
@@ -200,8 +211,12 @@ function timerComplete() {
 
 // Play Sound
 function playSound() {
+    // Create AudioContext once and reuse it to prevent memory leaks
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
     // Create simple beep using Web Audio API
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
 
@@ -237,55 +252,77 @@ function requestNotificationPermission() {
     }
 }
 
-// Event Listeners
-startBtn.addEventListener('click', startTimer);
-pauseBtn.addEventListener('click', pauseTimer);
-resetBtn.addEventListener('click', resetTimer);
+// Initialize Application
+function init() {
+    // Get DOM Elements
+    timeLeftEl = document.getElementById('time-left');
+    modeLabelEl = document.getElementById('mode-label');
+    startBtn = document.getElementById('start-btn');
+    pauseBtn = document.getElementById('pause-btn');
+    resetBtn = document.getElementById('reset-btn');
+    modeButtons = document.querySelectorAll('.mode-btn');
+    progressCircle = document.getElementById('progress-ring-circle');
+    pomodorsTodayEl = document.getElementById('pomodoros-today');
+    pomodorsTotalEl = document.getElementById('pomodoros-total');
+    workDurationInput = document.getElementById('work-duration');
+    shortBreakInput = document.getElementById('short-break-duration');
+    longBreakInput = document.getElementById('long-break-duration');
+    autoStartInput = document.getElementById('auto-start');
+    soundEnabledInput = document.getElementById('sound-enabled');
 
-modeButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-        if (!isRunning) {
-            setMode(btn.dataset.mode);
+    // Event Listeners
+    startBtn.addEventListener('click', startTimer);
+    pauseBtn.addEventListener('click', pauseTimer);
+    resetBtn.addEventListener('click', resetTimer);
+
+    modeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!isRunning) {
+                setMode(btn.dataset.mode);
+            }
+        });
+    });
+
+    // Settings listeners
+    workDurationInput.addEventListener('change', (e) => {
+        settings.workDuration = parseInt(e.target.value);
+        saveSettings();
+        if (currentMode === 'work' && !isRunning) {
+            setMode('work');
         }
     });
-});
 
-// Settings listeners
-workDurationInput.addEventListener('change', (e) => {
-    settings.workDuration = parseInt(e.target.value);
-    saveSettings();
-    if (currentMode === 'work' && !isRunning) {
-        setMode('work');
-    }
-});
+    shortBreakInput.addEventListener('change', (e) => {
+        settings.shortBreakDuration = parseInt(e.target.value);
+        saveSettings();
+        if (currentMode === 'short' && !isRunning) {
+            setMode('short');
+        }
+    });
 
-shortBreakInput.addEventListener('change', (e) => {
-    settings.shortBreakDuration = parseInt(e.target.value);
-    saveSettings();
-    if (currentMode === 'short' && !isRunning) {
-        setMode('short');
-    }
-});
+    longBreakInput.addEventListener('change', (e) => {
+        settings.longBreakDuration = parseInt(e.target.value);
+        saveSettings();
+        if (currentMode === 'long' && !isRunning) {
+            setMode('long');
+        }
+    });
 
-longBreakInput.addEventListener('change', (e) => {
-    settings.longBreakDuration = parseInt(e.target.value);
-    saveSettings();
-    if (currentMode === 'long' && !isRunning) {
-        setMode('long');
-    }
-});
+    autoStartInput.addEventListener('change', (e) => {
+        settings.autoStart = e.target.checked;
+        saveSettings();
+    });
 
-autoStartInput.addEventListener('change', (e) => {
-    settings.autoStart = e.target.checked;
-    saveSettings();
-});
+    soundEnabledInput.addEventListener('change', (e) => {
+        settings.soundEnabled = e.target.checked;
+        saveSettings();
+    });
 
-soundEnabledInput.addEventListener('change', (e) => {
-    settings.soundEnabled = e.target.checked;
-    saveSettings();
-});
+    // Initialize application
+    loadSettings();
+    setMode('work');
+    requestNotificationPermission();
+}
 
-// Initialize
-loadSettings();
-setMode('work');
-requestNotificationPermission();
+// Start application when DOM is ready
+document.addEventListener('DOMContentLoaded', init);

@@ -1,10 +1,10 @@
 // Canvas Setup
-const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d');
+let canvas;
+let ctx;
+let gridCanvas = null; // Off-screen canvas for grid caching
 
 const gridSize = 20;
 const tileCount = 20;
-canvas.width = canvas.height = gridSize * tileCount;
 
 // Game State
 let snake = [{ x: 10, y: 10 }];
@@ -18,18 +18,23 @@ let gameSpeed = 150;
 let gameRunning = false;
 
 // DOM Elements
-const scoreEl = document.getElementById('score');
-const highscoreEl = document.getElementById('highscore');
-const startBtn = document.getElementById('start-btn');
-const difficultyButtons = document.querySelectorAll('.diff-btn');
-const arrowButtons = document.querySelectorAll('.arrow-btn');
+let scoreEl;
+let highscoreEl;
+let startBtn;
+let difficultyButtons;
+let arrowButtons;
 
 // Load Highscore
 function loadHighscore() {
-    const stored = localStorage.getItem('snake-highscore');
-    if (stored) {
-        highscore = parseInt(stored);
-        highscoreEl.textContent = highscore;
+    try {
+        const stored = localStorage.getItem('snake-highscore');
+        if (stored) {
+            highscore = parseInt(stored);
+            highscoreEl.textContent = highscore;
+        }
+    } catch (error) {
+        console.error('localStorage read error:', error);
+        // Fallback auf Default-Wert (highscore bleibt 0)
     }
 }
 
@@ -37,7 +42,12 @@ function loadHighscore() {
 function saveHighscore() {
     if (score > highscore) {
         highscore = score;
-        localStorage.setItem('snake-highscore', highscore);
+        try {
+            localStorage.setItem('snake-highscore', highscore);
+        } catch (error) {
+            console.error('localStorage write error:', error);
+            // Highscore wird trotzdem angezeigt, nur nicht persistiert
+        }
         highscoreEl.textContent = highscore;
     }
 }
@@ -55,6 +65,38 @@ function startGame() {
 
     if (gameLoop) clearInterval(gameLoop);
     gameLoop = setInterval(update, gameSpeed);
+}
+
+// Draw Grid (cached)
+function drawGrid() {
+    if (!gridCanvas) {
+        // Create off-screen canvas for grid
+        gridCanvas = document.createElement('canvas');
+        gridCanvas.width = canvas.width;
+        gridCanvas.height = canvas.height;
+        const gridCtx = gridCanvas.getContext('2d');
+
+        // Draw background
+        gridCtx.fillStyle = '#1a1a1a';
+        gridCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw grid lines
+        gridCtx.strokeStyle = '#2a2a2a';
+        gridCtx.lineWidth = 1;
+        for (let i = 0; i <= tileCount; i++) {
+            gridCtx.beginPath();
+            gridCtx.moveTo(i * gridSize, 0);
+            gridCtx.lineTo(i * gridSize, canvas.height);
+            gridCtx.stroke();
+
+            gridCtx.beginPath();
+            gridCtx.moveTo(0, i * gridSize);
+            gridCtx.lineTo(canvas.width, i * gridSize);
+            gridCtx.stroke();
+        }
+    }
+    // Copy cached grid to main canvas
+    ctx.drawImage(gridCanvas, 0, 0);
 }
 
 // Update Game
@@ -95,24 +137,8 @@ function update() {
 
 // Draw Game
 function draw() {
-    // Clear canvas
-    ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw grid
-    ctx.strokeStyle = '#2a2a2a';
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= tileCount; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i * gridSize, 0);
-        ctx.lineTo(i * gridSize, canvas.height);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(0, i * gridSize);
-        ctx.lineTo(canvas.width, i * gridSize);
-        ctx.stroke();
-    }
+    // Use cached grid instead of redrawing every frame
+    drawGrid();
 
     // Draw food
     ctx.fillStyle = '#ff4444';
@@ -140,11 +166,20 @@ function draw() {
 
 // Place Food
 function placeFood() {
+    let attempts = 0;
+    const maxAttempts = tileCount * tileCount;
+
     do {
         food = {
             x: Math.floor(Math.random() * tileCount),
             y: Math.floor(Math.random() * tileCount)
         };
+        attempts++;
+        if (attempts >= maxAttempts) {
+            // Game won - no space left
+            gameOver();
+            return;
+        }
     } while (snake.some(segment => segment.x === food.x && segment.y === food.y));
 }
 
@@ -154,9 +189,10 @@ function gameOver() {
     clearInterval(gameLoop);
     saveHighscore();
 
-    setTimeout(() => {
-        alert(`Game Over!\n\nPunkte: ${score}\nHighscore: ${highscore}`);
-    }, 100);
+    // Game over state is clear from the stopped game - no blocking alert needed
+    // setTimeout(() => {
+    //     alert(`Game Over!\n\nPunkte: ${score}\nHighscore: ${highscore}`);
+    // }, 100);
 }
 
 // Change Direction
@@ -174,66 +210,84 @@ function changeDirection(newDirection) {
     nextDirection = newDirection;
 }
 
-// Keyboard Controls
-document.addEventListener('keydown', (e) => {
-    switch (e.key) {
-        case 'ArrowUp':
-            e.preventDefault();
-            changeDirection({ x: 0, y: -1 });
-            break;
-        case 'ArrowDown':
-            e.preventDefault();
-            changeDirection({ x: 0, y: 1 });
-            break;
-        case 'ArrowLeft':
-            e.preventDefault();
-            changeDirection({ x: -1, y: 0 });
-            break;
-        case 'ArrowRight':
-            e.preventDefault();
-            changeDirection({ x: 1, y: 0 });
-            break;
-    }
-});
+// Initialize Application
+function init() {
+    // Get DOM Elements
+    canvas = document.getElementById('game-canvas');
+    ctx = canvas.getContext('2d');
+    scoreEl = document.getElementById('score');
+    highscoreEl = document.getElementById('highscore');
+    startBtn = document.getElementById('start-btn');
+    difficultyButtons = document.querySelectorAll('.diff-btn');
+    arrowButtons = document.querySelectorAll('.arrow-btn');
 
-// Button Controls
-arrowButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-        const dir = btn.dataset.direction;
-        switch (dir) {
-            case 'up':
+    // Set canvas size
+    canvas.width = canvas.height = gridSize * tileCount;
+
+    // Keyboard Controls
+    document.addEventListener('keydown', (e) => {
+        switch (e.key) {
+            case 'ArrowUp':
+                e.preventDefault();
                 changeDirection({ x: 0, y: -1 });
                 break;
-            case 'down':
+            case 'ArrowDown':
+                e.preventDefault();
                 changeDirection({ x: 0, y: 1 });
                 break;
-            case 'left':
+            case 'ArrowLeft':
+                e.preventDefault();
                 changeDirection({ x: -1, y: 0 });
                 break;
-            case 'right':
+            case 'ArrowRight':
+                e.preventDefault();
                 changeDirection({ x: 1, y: 0 });
                 break;
         }
     });
-});
 
-// Start Button
-startBtn.addEventListener('click', startGame);
-
-// Difficulty Selection
-difficultyButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-        difficultyButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        gameSpeed = parseInt(btn.dataset.speed);
-
-        if (gameRunning) {
-            clearInterval(gameLoop);
-            gameLoop = setInterval(update, gameSpeed);
-        }
+    // Button Controls
+    arrowButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const dir = btn.dataset.direction;
+            switch (dir) {
+                case 'up':
+                    changeDirection({ x: 0, y: -1 });
+                    break;
+                case 'down':
+                    changeDirection({ x: 0, y: 1 });
+                    break;
+                case 'left':
+                    changeDirection({ x: -1, y: 0 });
+                    break;
+                case 'right':
+                    changeDirection({ x: 1, y: 0 });
+                    break;
+            }
+        });
     });
-});
 
-// Initialize
-loadHighscore();
-draw();
+    // Start Button
+    startBtn.addEventListener('click', startGame);
+
+    // Difficulty Selection
+    difficultyButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            difficultyButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            gameSpeed = parseInt(btn.dataset.speed);
+
+            if (gameRunning) {
+                clearInterval(gameLoop);
+                gameLoop = setInterval(update, gameSpeed);
+            }
+        });
+    });
+
+    // Initialize application
+    loadHighscore();
+    draw();
+}
+
+// Start application when DOM is ready
+document.addEventListener('DOMContentLoaded', init);

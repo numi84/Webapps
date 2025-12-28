@@ -1,16 +1,12 @@
 // Canvas Setup
-const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d');
-const nextCanvas = document.getElementById('next-canvas');
-const nextCtx = nextCanvas.getContext('2d');
+let canvas;
+let ctx;
+let nextCanvas;
+let nextCtx;
 
 const blockSize = 30;
 const cols = 10;
 const rows = 20;
-canvas.width = cols * blockSize;
-canvas.height = rows * blockSize;
-nextCanvas.width = 4 * blockSize;
-nextCanvas.height = 4 * blockSize;
 
 // Tetrominos
 const tetrominos = {
@@ -45,13 +41,14 @@ let gameRunning = false;
 let dropCounter = 0;
 let dropInterval = 1000;
 let lastTime = 0;
+let animationFrameId = null;
 
 // DOM Elements
-const scoreEl = document.getElementById('score');
-const levelEl = document.getElementById('level');
-const linesEl = document.getElementById('lines');
-const startBtn = document.getElementById('start-btn');
-const controlButtons = document.querySelectorAll('.control-btn');
+let scoreEl;
+let levelEl;
+let linesEl;
+let startBtn;
+let controlButtons;
 
 // Initialize Board
 function createBoard() {
@@ -237,7 +234,7 @@ function clearLines() {
 
     if (linesCleared > 0) {
         lines += linesCleared;
-        score += [0, 40, 100, 300, 1200][linesCleared] * level;
+        score += ([0, 40, 100, 300, 1200][linesCleared] || 0) * level;
         level = Math.floor(lines / 10) + 1;
         dropInterval = Math.max(100, 1000 - (level - 1) * 100);
 
@@ -274,7 +271,7 @@ function update(time = 0) {
     }
 
     draw();
-    requestAnimationFrame(update);
+    animationFrameId = requestAnimationFrame(update);
 }
 
 // Start Game
@@ -300,49 +297,77 @@ function startGame() {
 // Game Over
 function gameOver() {
     gameRunning = false;
-    setTimeout(() => {
-        alert(`Game Over!\n\nPunkte: ${score}\nLevel: ${level}\nReihen: ${lines}`);
-    }, 100);
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+    // Game over state is clear from the stopped game - no blocking alert needed
+    // setTimeout(() => {
+    //     alert(`Game Over!\n\nPunkte: ${score}\nLevel: ${level}\nReihen: ${lines}`);
+    // }, 100);
 }
 
-// Keyboard Controls
-document.addEventListener('keydown', (e) => {
-    if (!gameRunning) return;
+// Initialize Application
+function init() {
+    // Get DOM Elements
+    canvas = document.getElementById('game-canvas');
+    ctx = canvas.getContext('2d');
+    nextCanvas = document.getElementById('next-canvas');
+    nextCtx = nextCanvas.getContext('2d');
+    scoreEl = document.getElementById('score');
+    levelEl = document.getElementById('level');
+    linesEl = document.getElementById('lines');
+    startBtn = document.getElementById('start-btn');
+    controlButtons = document.querySelectorAll('.control-btn');
 
-    switch (e.key) {
-        case 'ArrowLeft':
-            e.preventDefault();
-            move('left');
-            break;
-        case 'ArrowRight':
-            e.preventDefault();
-            move('right');
-            break;
-        case 'ArrowDown':
-            e.preventDefault();
-            move('down');
-            break;
-        case 'ArrowUp':
-            e.preventDefault();
-            move('rotate');
-            break;
-        case ' ':
-            e.preventDefault();
-            move('drop');
-            break;
-    }
-});
+    // Set canvas sizes
+    canvas.width = cols * blockSize;
+    canvas.height = rows * blockSize;
+    nextCanvas.width = 4 * blockSize;
+    nextCanvas.height = 4 * blockSize;
 
-// Button Controls
-controlButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-        move(btn.dataset.action);
+    // Keyboard Controls
+    document.addEventListener('keydown', (e) => {
+        if (!gameRunning) return;
+
+        switch (e.key) {
+            case 'ArrowLeft':
+                e.preventDefault();
+                move('left');
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                move('right');
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                move('down');
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                move('rotate');
+                break;
+            case ' ':
+                e.preventDefault();
+                move('drop');
+                break;
+        }
     });
-});
 
-// Start Button
-startBtn.addEventListener('click', startGame);
+    // Button Controls
+    controlButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            move(btn.dataset.action);
+        });
+    });
 
-// Initialize
-drawBoard();
-drawNextPiece();
+    // Start Button
+    startBtn.addEventListener('click', startGame);
+
+    // Initialize game
+    drawBoard();
+    drawNextPiece();
+}
+
+// Start application when DOM is ready
+document.addEventListener('DOMContentLoaded', init);

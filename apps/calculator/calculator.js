@@ -4,14 +4,14 @@ let previousOperand = '';
 let operation = null;
 
 // DOM Elements
-const currentOperandEl = document.getElementById('current-operand');
-const previousOperandEl = document.getElementById('previous-operand');
-const numberButtons = document.querySelectorAll('[data-number]');
-const operatorButtons = document.querySelectorAll('[data-operator]');
-const equalsButton = document.querySelector('[data-action="equals"]');
-const clearButton = document.querySelector('[data-action="clear"]');
-const deleteButton = document.querySelector('[data-action="delete"]');
-const percentButton = document.querySelector('[data-action="percent"]');
+let currentOperandEl;
+let previousOperandEl;
+let numberButtons;
+let operatorButtons;
+let equalsButton;
+let clearButton;
+let deleteButton;
+let percentButton;
 
 // Append Number
 function appendNumber(number) {
@@ -70,6 +70,13 @@ function calculate() {
             return;
     }
 
+    // Check for Infinity or NaN
+    if (!isFinite(result) || isNaN(result)) {
+        alert('Fehler: Ergebnis ist zu groß oder ungültig!');
+        clear();
+        return;
+    }
+
     currentOperand = result.toString();
     operation = null;
     previousOperand = '';
@@ -99,7 +106,13 @@ function percent() {
     const current = parseFloat(currentOperand);
     if (isNaN(current)) return;
 
-    currentOperand = (current / 100).toString();
+    // If there's a pending operation, calculate percentage of previous operand
+    if (operation && previousOperand) {
+        const prev = parseFloat(previousOperand);
+        currentOperand = (prev * current / 100).toString();
+    } else {
+        currentOperand = (current / 100).toString();
+    }
     updateDisplay();
 }
 
@@ -125,42 +138,58 @@ function getOperatorSymbol(op) {
     }
 }
 
-// Event Listeners
-numberButtons.forEach(button => {
-    button.addEventListener('click', () => {
-        appendNumber(button.dataset.number);
-    });
-});
-
-operatorButtons.forEach(button => {
-    button.addEventListener('click', () => {
-        chooseOperation(button.dataset.operator);
-    });
-});
-
-equalsButton.addEventListener('click', calculate);
-clearButton.addEventListener('click', clear);
-deleteButton.addEventListener('click', deleteNumber);
-percentButton.addEventListener('click', percent);
-
-// Keyboard Support
-document.addEventListener('keydown', (e) => {
-    if (e.key >= '0' && e.key <= '9') {
-        appendNumber(e.key);
-    } else if (e.key === '.') {
-        appendNumber('.');
-    } else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/') {
-        chooseOperation(e.key);
-    } else if (e.key === 'Enter' || e.key === '=') {
-        calculate();
-    } else if (e.key === 'Escape') {
-        clear();
-    } else if (e.key === 'Backspace') {
-        deleteNumber();
-    } else if (e.key === '%') {
-        percent();
-    }
-});
-
 // Initialize
-updateDisplay();
+function init() {
+    // Get DOM Elements
+    currentOperandEl = document.getElementById('current-operand');
+    previousOperandEl = document.getElementById('previous-operand');
+    numberButtons = document.querySelectorAll('[data-number]');
+    operatorButtons = document.querySelectorAll('[data-operator]');
+    equalsButton = document.querySelector('[data-action="equals"]');
+    clearButton = document.querySelector('[data-action="clear"]');
+    deleteButton = document.querySelector('[data-action="delete"]');
+    percentButton = document.querySelector('[data-action="percent"]');
+
+    // Event Listeners
+    numberButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            appendNumber(button.dataset.number);
+        });
+    });
+
+    operatorButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            chooseOperation(button.dataset.operator);
+        });
+    });
+
+    equalsButton.addEventListener('click', calculate);
+    clearButton.addEventListener('click', clear);
+    deleteButton.addEventListener('click', deleteNumber);
+    percentButton.addEventListener('click', percent);
+
+    // Keyboard Support
+    document.addEventListener('keydown', (e) => {
+        if (e.key >= '0' && e.key <= '9') {
+            appendNumber(e.key);
+        } else if (e.key === '.') {
+            appendNumber('.');
+        } else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/') {
+            chooseOperation(e.key);
+        } else if (e.key === 'Enter' || e.key === '=') {
+            calculate();
+        } else if (e.key === 'Escape') {
+            clear();
+        } else if (e.key === 'Backspace') {
+            deleteNumber();
+        } else if (e.key === '%') {
+            percent();
+        }
+    });
+
+    // Initialize display
+    updateDisplay();
+}
+
+// Wait for DOM to be ready
+document.addEventListener('DOMContentLoaded', init);

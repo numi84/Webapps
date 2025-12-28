@@ -10,12 +10,12 @@ let gameState = {
 };
 
 // DOM Elements
-const puzzleBoard = document.getElementById('puzzle-board');
-const movesEl = document.getElementById('moves');
-const timerEl = document.getElementById('timer');
-const shuffleBtn = document.getElementById('shuffle-btn');
-const winMessage = document.getElementById('win-message');
-const difficultyButtons = document.querySelectorAll('.diff-btn');
+let puzzleBoard;
+let movesEl;
+let timerEl;
+let shuffleBtn;
+let winMessage;
+let difficultyButtons;
 
 // Initialize Game
 function initGame() {
@@ -141,9 +141,10 @@ function winGame() {
     clearInterval(gameState.timerInterval);
     showWinMessage();
 
-    setTimeout(() => {
-        alert(`Glückwunsch!\n\nZüge: ${gameState.moves}\nZeit: ${gameState.timer}s`);
-    }, 300);
+    // Win message is already visible in HTML - no blocking alert needed
+    // setTimeout(() => {
+    //     alert(`Glückwunsch!\n\nZüge: ${gameState.moves}\nZeit: ${gameState.timer}s`);
+    // }, 300);
 }
 
 // Show/Hide Win Message
@@ -169,19 +170,33 @@ function startTimer() {
     }, 1000);
 }
 
-// Event Listeners
-shuffleBtn.addEventListener('click', shuffle);
+// Initialize Application
+function init() {
+    // Get DOM Elements
+    puzzleBoard = document.getElementById('puzzle-board');
+    movesEl = document.getElementById('moves');
+    timerEl = document.getElementById('timer');
+    shuffleBtn = document.getElementById('shuffle-btn');
+    winMessage = document.getElementById('win-message');
+    difficultyButtons = document.querySelectorAll('.diff-btn');
 
-difficultyButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-        difficultyButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    // Event Listeners
+    shuffleBtn.addEventListener('click', shuffle);
 
-        gameState.size = parseInt(btn.dataset.size);
-        initGame();
+    difficultyButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            difficultyButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            gameState.size = parseInt(btn.dataset.size);
+            initGame();
+        });
     });
-});
 
-// Initialize
-initGame();
-shuffle();
+    // Initialize game
+    initGame();
+    shuffle();
+}
+
+// Start application when DOM is ready
+document.addEventListener('DOMContentLoaded', init);
