@@ -291,8 +291,9 @@ class BreakoutGame {
             if (e.code === 'Space' && this.state === GameState.PLAYING) {
                 e.preventDefault();
 
-                const activeBall = this.balls.find(b => !b.active && !b.destroyed);
-                if (activeBall) {
+                // Find inactive ball that isn't destroyed
+                const inactiveBall = this.balls.find(b => !b.active && !b.destroyed);
+                if (inactiveBall) {
                     this.launchBall();
                 } else if (this.paddle.hasLaser) {
                     this.shootLaser();
@@ -308,8 +309,9 @@ class BreakoutGame {
         // Canvas click to launch ball
         this.input.onAction('onClick', () => {
             if (this.state === GameState.PLAYING) {
-                const activeBall = this.balls.find(b => !b.active);
-                if (activeBall) {
+                // Use consistent condition: find inactive ball that isn't destroyed
+                const inactiveBall = this.balls.find(b => !b.active && !b.destroyed);
+                if (inactiveBall) {
                     this.launchBall();
                 } else if (this.paddle.hasLaser) {
                     this.shootLaser();
@@ -626,12 +628,33 @@ class BreakoutGame {
     }
 
     restartLevel() {
-        const level = this.levels.find(l => l.id === this.currentLevel);
+        let level;
+
+        // Handle both premade and custom levels
+        if (this.isCustomLevel) {
+            if (this.currentLevel === 'test') {
+                // Test level from editor - can't restart, go back to editor
+                this.showScreen(GameState.EDITOR);
+                return;
+            }
+            // Custom level format: "custom_X" where X is the index
+            const match = String(this.currentLevel).match(/^custom_(\d+)$/);
+            if (match) {
+                const index = parseInt(match[1], 10);
+                level = this.customLevels[index];
+            }
+        } else {
+            level = this.levels.find(l => l.id === this.currentLevel);
+        }
+
         if (level) {
             this.loadLevel(level);
+            this.gameRunning = true;
+            document.getElementById('startOverlay').style.display = 'flex';
+        } else {
+            console.warn('Could not find level to restart:', this.currentLevel);
+            this.showScreen(GameState.LEVEL_SELECT);
         }
-        this.gameRunning = true;
-        document.getElementById('startOverlay').style.display = 'flex';
     }
 
     loadNextLevel() {
@@ -646,9 +669,16 @@ class BreakoutGame {
 
     // Game Loop
     startGameLoop() {
+        // Initialize lastTime to prevent massive deltaTime on first frame
+        this.lastTime = performance.now();
+
         const loop = (timestamp) => {
-            const deltaTime = timestamp - this.lastTime;
+            let deltaTime = timestamp - this.lastTime;
             this.lastTime = timestamp;
+
+            // Clamp deltaTime to prevent physics issues after tab switch or pause
+            // Max 100ms (10 FPS minimum) to avoid objects teleporting
+            deltaTime = Math.min(deltaTime, 100);
 
             this.update(deltaTime);
             this.render();
@@ -1025,6 +1055,11 @@ class BreakoutGame {
 
         for (let i = 0; i < count - 1; i++) {
             const newBall = new Ball(existingBall.x, existingBall.y, existingBall.radius, existingBall.speed);
+
+            // Inherit special states from existing ball
+            newBall.isFireball = existingBall.isFireball;
+            newBall.isMagnetic = existingBall.isMagnetic;
+
             const angle = -Math.PI / 4 + (Math.random() - 0.5) * Math.PI / 2;
             newBall.launch(angle);
             this.balls.push(newBall);
@@ -1063,7 +1098,9 @@ class BreakoutGame {
     }
 
     resetBall() {
-        const ball = new Ball(this.canvas.width / 2, this.paddle.y - 20, 8, 5);
+        // Position ball above center of paddle, not canvas center
+        const pBounds = this.paddle.getBounds();
+        const ball = new Ball(pBounds.centerX, this.paddle.y - 20, 8, 5);
         this.balls.push(ball);
         document.getElementById('startOverlay').style.display = 'flex';
     }

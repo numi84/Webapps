@@ -81,6 +81,9 @@ export class Block {
         this.regenerateTimer = 0;
         this.isRegenerating = false;
         this.revealProgress = type === BlockType.INVISIBLE ? 0 : 1;
+
+        // Animation time (accumulated, pauses when game pauses)
+        this.animationTime = 0;
     }
 
     hit(damage = 1) {
@@ -103,6 +106,9 @@ export class Block {
     }
 
     update(deltaTime, ballX, ballY) {
+        // Accumulate animation time (this pauses when game pauses)
+        this.animationTime += deltaTime;
+
         // Moving block
         if (this.type === BlockType.MOVING && !this.destroyed) {
             this.x += this.movingSpeed * this.movingDirection;
@@ -213,8 +219,8 @@ export class Block {
 
             case BlockType.REGENERATING:
                 if (this.isRegenerating) {
-                    // Pulsing effect
-                    const alpha = (Math.sin(Date.now() / 200) + 1) / 2;
+                    // Pulsing effect - use animationTime instead of Date.now() so it pauses correctly
+                    const alpha = (Math.sin(this.animationTime / 200) + 1) / 2;
                     ctx.fillStyle = `rgba(76, 175, 80, ${alpha})`;
                     ctx.fillRect(this.x, this.y, this.width, this.height);
                 }

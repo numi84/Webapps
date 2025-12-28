@@ -27,8 +27,14 @@ export class Ball {
         this.dy = 0;
         this.active = false;
         this.trail = [];
+
+        // Reset all special states
         this.isFireball = false;
         this.isSticky = false;
+        this.isMagnetic = false;
+        this.stuckToPaddle = false;
+        this.paddleOffset = 0;
+        this.capturedAngle = 0;
     }
 
     launch(angle = -Math.PI / 4) {

@@ -3,13 +3,62 @@ export class SoundManager {
         this.enabled = true;
         this.volume = 0.3;
         this.audioContext = null;
+        this.isResumed = false;
+
+        // Cached explosion buffer for better performance
+        this.explosionBuffer = null;
 
         // Initialize Web Audio API
         try {
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+            // Handle autoplay policy - context starts suspended in most browsers
+            if (this.audioContext.state === 'suspended') {
+                this.isResumed = false;
+            } else {
+                this.isResumed = true;
+                this.createExplosionBuffer();
+            }
         } catch (e) {
             console.warn('Web Audio API not supported', e);
             this.enabled = false;
+        }
+    }
+
+    /**
+     * Resume the audio context after user interaction.
+     * Call this on first user click/touch to comply with autoplay policies.
+     */
+    async resumeContext() {
+        if (!this.audioContext || this.isResumed) return;
+
+        try {
+            await this.audioContext.resume();
+            this.isResumed = true;
+            // Create explosion buffer after context is resumed
+            this.createExplosionBuffer();
+        } catch (e) {
+            console.warn('Failed to resume AudioContext:', e);
+        }
+    }
+
+    /**
+     * Pre-create the explosion noise buffer for better performance.
+     */
+    createExplosionBuffer() {
+        if (!this.audioContext || this.explosionBuffer) return;
+
+        try {
+            const bufferSize = Math.floor(this.audioContext.sampleRate * 0.3);
+            this.explosionBuffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+            const data = this.explosionBuffer.getChannelData(0);
+
+            // Generate white noise
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+        } catch (e) {
+            console.warn('Failed to create explosion buffer:', e);
         }
     }
 
@@ -17,23 +66,32 @@ export class SoundManager {
     playTone(frequency, duration = 0.1, type = 'sine', volume = 1.0) {
         if (!this.enabled || !this.audioContext) return;
 
-        const oscillator = this.audioContext.createOscillator();
-        const gainNode = this.audioContext.createGain();
+        // Try to resume if suspended (first interaction)
+        if (!this.isResumed) {
+            this.resumeContext();
+        }
 
-        oscillator.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
+        try {
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
 
-        oscillator.frequency.value = frequency;
-        oscillator.type = type;
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
 
-        gainNode.gain.setValueAtTime(this.volume * volume, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(
-            0.01,
-            this.audioContext.currentTime + duration
-        );
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
 
-        oscillator.start(this.audioContext.currentTime);
-        oscillator.stop(this.audioContext.currentTime + duration);
+            gainNode.gain.setValueAtTime(this.volume * volume, this.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(
+                0.01,
+                this.audioContext.currentTime + duration
+            );
+
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + duration);
+        } catch (e) {
+            // Silently fail - audio is not critical
+        }
     }
 
     // Play a chord (multiple frequencies)
@@ -79,35 +137,42 @@ export class SoundManager {
     }
 
     playExplosion() {
-        // White noise burst
+        // White noise burst using cached buffer
         if (!this.enabled || !this.audioContext) return;
 
-        const bufferSize = this.audioContext.sampleRate * 0.3;
-        const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
-        const data = buffer.getChannelData(0);
-
-        // Generate white noise
-        for (let i = 0; i < bufferSize; i++) {
-            data[i] = Math.random() * 2 - 1;
+        // Try to resume if suspended
+        if (!this.isResumed) {
+            this.resumeContext();
         }
 
-        const noise = this.audioContext.createBufferSource();
-        noise.buffer = buffer;
+        // Create buffer on demand if not cached yet
+        if (!this.explosionBuffer) {
+            this.createExplosionBuffer();
+        }
 
-        const gainNode = this.audioContext.createGain();
-        const filter = this.audioContext.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 800;
+        if (!this.explosionBuffer) return;
 
-        noise.connect(filter);
-        filter.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
+        try {
+            const noise = this.audioContext.createBufferSource();
+            noise.buffer = this.explosionBuffer;
 
-        gainNode.gain.setValueAtTime(this.volume * 0.6, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
+            const gainNode = this.audioContext.createGain();
+            const filter = this.audioContext.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 800;
 
-        noise.start();
-        noise.stop(this.audioContext.currentTime + 0.3);
+            noise.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+
+            gainNode.gain.setValueAtTime(this.volume * 0.6, this.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
+
+            noise.start();
+            noise.stop(this.audioContext.currentTime + 0.3);
+        } catch (e) {
+            // Silently fail
+        }
     }
 
     playLoseLife() {
